@@ -23,9 +23,7 @@ ABSTRACT_PHONE_API_KEY = os.getenv("ABSTRACT_PHONE_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 # Select a Gemini model available to your API account.
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
-if GEMINI_MODEL in ("gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", ""):
-    GEMINI_MODEL = "gemini-3.8-flash"
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 REQUEST_TIMEOUT = 20
 
