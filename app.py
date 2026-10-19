@@ -322,22 +322,16 @@ def check_email():
         }), 504
 
     except requests.RequestException as e:
-        app.logger.exception("Email validation request failed")
-        upstream_text = None
-        upstream_status = None
-        try:
-            if getattr(e, 'response', None) is not None:
-                upstream_status = e.response.status_code
-                upstream_text = e.response.text
-        except Exception:
-            upstream_text = None
+        upstream_status = e.response.status_code if e.response is not None else None
+        app.logger.error(
+            "Email validation request failed (upstream status: %s)",
+            upstream_status if upstream_status is not None else type(e).__name__
+        )
         payload = {
             "error": "Could not validate the email. Check your API key and usage limits."
         }
         if upstream_status is not None:
             payload["upstream_status"] = upstream_status
-        if upstream_text:
-            payload["upstream_response"] = upstream_text[:2000]
         return jsonify(payload), 502
 
     except (ValueError, TypeError):
@@ -500,22 +494,16 @@ def check_phone():
         }), 504
 
     except requests.RequestException as e:
-        app.logger.exception("Phone validation request failed")
-        upstream_text = None
-        upstream_status = None
-        try:
-            if getattr(e, 'response', None) is not None:
-                upstream_status = e.response.status_code
-                upstream_text = e.response.text
-        except Exception:
-            upstream_text = None
+        upstream_status = e.response.status_code if e.response is not None else None
+        app.logger.error(
+            "Phone validation request failed (upstream status: %s)",
+            upstream_status if upstream_status is not None else type(e).__name__
+        )
         payload = {
             "error": "Could not validate the number. Check your API key and usage limits."
         }
         if upstream_status is not None:
             payload["upstream_status"] = upstream_status
-        if upstream_text:
-            payload["upstream_response"] = upstream_text[:2000]
         return jsonify(payload), 502
 
     except (ValueError, TypeError):
