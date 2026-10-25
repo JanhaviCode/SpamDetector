@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>SpamShield AI | Smart Security Scanner</title>
+    <title>SpamShield AI | Unified Security Scanner</title>
 
     <meta name="description"
-          content="Analyze suspicious messages and validate email addresses and phone numbers.">
+          content="Multi-layer cyber threat defense: AI Message Spam Analysis, Email Reputation & Deliverability, Telecom Phone Intelligence, and Quishing QR Code Safety.">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
           rel="stylesheet">
@@ -18,21 +18,48 @@
 
 <body>
 
-<div class="background-glow glow-one"></div>
-<div class="background-glow glow-two"></div>
+<!-- DYNAMIC ANIMATED MOVING CYBER BACKGROUND -->
+<div class="cyber-moving-bg" aria-hidden="true">
+    <div class="cyber-grid-overlay"></div>
+    <div class="cyber-beam-line"></div>
+    <div class="cyber-mouse-spotlight" id="cyberSpotlight"></div>
+    <canvas id="cyberCanvas" class="cyber-canvas"></canvas>
+    <div class="background-glow glow-one"></div>
+    <div class="background-glow glow-two"></div>
+    <div class="background-glow glow-three"></div>
+    <div class="background-glow glow-four"></div>
+</div>
 
-<nav class="navbar navbar-expand-lg navbar-dark">
+<!-- CUSTOM INTERACTIVE CYBER CURSOR -->
+<div class="custom-cursor-dot" id="cursorDot" aria-hidden="true"></div>
+<div class="custom-cursor-ring" id="cursorRing" aria-hidden="true"></div>
+
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
     <div class="container py-2">
 
         <a class="navbar-brand fw-bold" href="/">
-            <span class="brand-icon">S</span>
+            <span class="brand-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="m9 12 2 2 4-4"/>
+                </svg>
+            </span>
             SpamShield<span class="brand-ai">AI</span>
         </a>
 
-        <span class="nav-status">
-            <span class="status-dot"></span>
-            Security Workspace
-        </span>
+        <div class="d-flex align-items-center gap-3">
+            <span class="nav-status">
+                <span class="status-dot"></span>
+                <span class="d-none d-sm-inline">Threat Radar</span> Online
+                <span class="nav-radar-bars" aria-hidden="true">
+                    <span></span><span></span><span></span><span></span>
+                </span>
+            </span>
+            <a href="#scannerWorkspace" class="nav-cta-btn">
+                <span>Launch Scanner</span>
+                <span>↓</span>
+            </a>
+        </div>
 
     </div>
 </nav>
@@ -42,168 +69,153 @@
 
     <!-- HERO -->
 
-    <section class="hero-section text-center">
+    <section class="hero-section text-center" data-scroll-reveal="fade-up">
 
         <div class="eyebrow">
-            <span>✦</span> INTELLIGENT THREAT ANALYSIS
+            <span class="sparkle">✦</span> ADVANCED THREAT INTELLIGENCE PLATFORM
         </div>
 
         <h1>
-            Stay ahead of<br>
-            <span class="gradient-text">digital deception.</span>
+            Defend against scams,<br>
+            <span class="gradient-text">spam & digital deception.</span>
         </h1>
 
         <p class="hero-description">
-            Analyze suspicious messages, validate emails, and inspect
-            phone numbers with a unified security workspace.
+            Four specialized scanners in one unified workspace. Analyze suspicious messages with Gemini AI, 
+            verify email deliverability & reputation, inspect phone telecom fraud scores, and unmask malicious QR quishing traps.
         </p>
 
         <div class="hero-tags">
-            <span>✦ Generative AI</span>
-            <span>✦ Email Validation</span>
-            <span>✦ Phone Intelligence</span>
-            <span>✦ QR & Quishing Scanner</span>
+            <span class="hero-tag-pill">
+                <span class="pill-dot purple-dot"></span>
+                AI Gemini Analysis
+            </span>
+            <span class="hero-tag-pill">
+                <span class="pill-dot blue-dot"></span>
+                Email Reputation & MX
+            </span>
+            <span class="hero-tag-pill">
+                <span class="pill-dot green-dot"></span>
+                Telecom & VoIP Registry
+            </span>
+            <span class="hero-tag-pill">
+                <span class="pill-dot amber-dot"></span>
+                Quishing & QR Shield
+            </span>
         </div>
 
     </section>
 
 
-    <!-- TOOL SELECTOR -->
+    <!-- TOOL SELECTOR (HIGH LEVEL OVERVIEW CARDS) -->
 
     <section class="tool-section">
 
-        <div class="section-heading">
+        <div class="section-heading" data-scroll-reveal="fade-up">
             <div>
-                <p class="section-label">YOUR WORKSPACE</p>
-                <h2>Choose your scanner</h2>
+                <p class="section-label">CHOOSE YOUR SCANNER</p>
+                <h2>Security modules</h2>
             </div>
 
             <span class="live-badge">
                 <span class="status-dot"></span>
-                Systems ready
+                4 Engines Active
             </span>
         </div>
 
 
         <div class="row g-4">
 
-            <!-- MESSAGE SCANNER -->
-
-            <div class="col-xl-3 col-md-6">
-
+            <!-- MESSAGE SCANNER CARD -->
+            <div class="col-xl-3 col-md-6" data-scroll-reveal="zoom" style="--stagger-i: 0;">
                 <button class="tool-card active"
                         data-tool="message"
-                        type="button">
-
+                        data-tilt="true"
+                        type="button"
+                        id="toolCard-message">
+                    <div class="card-glare" aria-hidden="true"></div>
                     <div class="tool-top">
-                        <div class="tool-icon icon-purple">✳</div>
+                        <div class="tool-icon icon-purple">💬</div>
                         <span class="tool-arrow">↗</span>
                     </div>
-
                     <h3>Message Scanner</h3>
-
                     <p>
-                        Detect suspicious text, scams, phishing,
-                        and unwanted promotional messages.
+                        Detect phishing attacks, lottery lures, banking impersonation, and fraudulent SMS messages.
                     </p>
-
                     <div class="tool-footer">
-                        <span>POWERED BY GEMINI</span>
+                        <span>POWERED BY GEMINI AI</span>
                         <span class="tool-indicator"></span>
                     </div>
-
                 </button>
-
             </div>
 
-
-            <!-- EMAIL SCANNER -->
-
-            <div class="col-xl-3 col-md-6">
-
+            <!-- EMAIL CHECKER CARD -->
+            <div class="col-xl-3 col-md-6" data-scroll-reveal="zoom" style="--stagger-i: 1;">
                 <button class="tool-card"
                         data-tool="email"
-                        type="button">
-
+                        data-tilt="true"
+                        type="button"
+                        id="toolCard-email">
+                    <div class="card-glare" aria-hidden="true"></div>
                     <div class="tool-top">
-                        <div class="tool-icon icon-blue">✉</div>
+                        <div class="tool-icon icon-blue">✉️</div>
                         <span class="tool-arrow">↗</span>
                     </div>
-
                     <h3>Email Checker</h3>
-
                     <p>
-                        Inspect email format, domain configuration,
-                        deliverability, and disposable-address indicators.
+                        Inspect disposable burner domains, mail server MX validity, SMTP handshake, and breach logs.
                     </p>
-
                     <div class="tool-footer">
-                        <span>EMAIL VALIDATION API</span>
+                        <span>REPUTATION & DELIVERABILITY</span>
                         <span class="tool-indicator"></span>
                     </div>
-
                 </button>
-
             </div>
 
-
-            <!-- PHONE SCANNER -->
-
-            <div class="col-xl-3 col-md-6">
-
+            <!-- PHONE CHECKER CARD -->
+            <div class="col-xl-3 col-md-6" data-scroll-reveal="zoom" style="--stagger-i: 2;">
                 <button class="tool-card"
                         data-tool="phone"
-                        type="button">
-
+                        data-tilt="true"
+                        type="button"
+                        id="toolCard-phone">
+                    <div class="card-glare" aria-hidden="true"></div>
                     <div class="tool-top">
-                        <div class="tool-icon icon-green">⌕</div>
+                        <div class="tool-icon icon-green">📞</div>
                         <span class="tool-arrow">↗</span>
                     </div>
-
                     <h3>Phone Checker</h3>
-
                     <p>
-                        Validate number formatting and inspect available
-                        carrier, country, and line-type information.
+                        Unmask VoIP burner lines, spam call history, spoofed numbers, telecom carriers, and geographic origin.
                     </p>
-
                     <div class="tool-footer">
-                        <span>PHONE INTELLIGENCE API</span>
+                        <span>TELECOM & ABUSE INTEL</span>
                         <span class="tool-indicator"></span>
                     </div>
-
                 </button>
-
             </div>
 
-
-            <!-- QR CODE SCANNER -->
-
-            <div class="col-xl-3 col-md-6">
-
+            <!-- QR VERIFIER CARD -->
+            <div class="col-xl-3 col-md-6" data-scroll-reveal="zoom" style="--stagger-i: 3;">
                 <button class="tool-card"
                         data-tool="qr"
-                        type="button">
-
+                        data-tilt="true"
+                        type="button"
+                        id="toolCard-qr">
+                    <div class="card-glare" aria-hidden="true"></div>
                     <div class="tool-top">
-                        <div class="tool-icon icon-amber">⚅</div>
+                        <div class="tool-icon icon-amber">🛡️</div>
                         <span class="tool-arrow">↗</span>
                     </div>
-
                     <h3>QR Verifier</h3>
-
                     <p>
-                        Scan or upload QR codes to detect Quishing (QR phishing),
-                        fraudulent payment traps, and malicious links.
+                        Camera scanning, photo upload, and link inspection for Quishing phishing, malicious redirects, and fake UPI traps.
                     </p>
-
                     <div class="tool-footer">
                         <span>QUISHING & URL ARBITER</span>
                         <span class="tool-indicator"></span>
                     </div>
-
                 </button>
-
             </div>
 
         </div>
@@ -211,258 +223,464 @@
     </section>
 
 
-    <!-- ANALYZER WORKSPACE -->
+    <!-- ANALYZER WORKSPACE WITH SEPARATE TABS -->
 
-    <section class="workspace-section">
+    <section class="workspace-section" id="scannerWorkspace">
 
-        <div class="workspace-panel">
+        <!-- DEDICATED SEPARATE TABS NAVIGATION BAR -->
+        <div class="workspace-tabs-wrapper" data-scroll-reveal="fade-up">
+            <div class="workspace-tabs-bar" role="tablist" aria-label="Security Checkers">
 
-            <div class="workspace-heading">
+                <button class="workspace-tab-btn active"
+                        data-tab="message"
+                        role="tab"
+                        id="tabBtn-message"
+                        aria-selected="true"
+                        aria-controls="pane-message"
+                        type="button">
+                    <span class="tab-btn-icon icon-purple-glow">💬</span>
+                    <span class="tab-btn-text">
+                        <span class="tab-btn-title">Message Scanner</span>
+                        <span class="tab-btn-sub">AI Text & Phishing</span>
+                    </span>
+                    <span class="tab-btn-badge badge-purple">Gemini AI</span>
+                </button>
 
-                <div>
-                    <div class="workspace-kicker">
-                        <span class="status-dot"></span>
-                        <span id="workspaceLabel">AI MESSAGE ANALYSIS</span>
+                <button class="workspace-tab-btn"
+                        data-tab="email"
+                        role="tab"
+                        id="tabBtn-email"
+                        aria-selected="false"
+                        aria-controls="pane-email"
+                        type="button">
+                    <span class="tab-btn-icon icon-blue-glow">✉️</span>
+                    <span class="tab-btn-text">
+                        <span class="tab-btn-title">Email Checker</span>
+                        <span class="tab-btn-sub">Reputation & MX</span>
+                    </span>
+                    <span class="tab-btn-badge badge-blue">Deliverability</span>
+                </button>
+
+                <button class="workspace-tab-btn"
+                        data-tab="phone"
+                        role="tab"
+                        id="tabBtn-phone"
+                        aria-selected="false"
+                        aria-controls="pane-phone"
+                        type="button">
+                    <span class="tab-btn-icon icon-green-glow">📞</span>
+                    <span class="tab-btn-text">
+                        <span class="tab-btn-title">Phone Checker</span>
+                        <span class="tab-btn-sub">Carrier & Abuse</span>
+                    </span>
+                    <span class="tab-btn-badge badge-green">Telecom Intel</span>
+                </button>
+
+                <button class="workspace-tab-btn"
+                        data-tab="qr"
+                        role="tab"
+                        id="tabBtn-qr"
+                        aria-selected="false"
+                        aria-controls="pane-qr"
+                        type="button">
+                    <span class="tab-btn-icon icon-amber-glow">🛡️</span>
+                    <span class="tab-btn-text">
+                        <span class="tab-btn-title">QR Verifier</span>
+                        <span class="tab-btn-sub">Quishing & Traps</span>
+                    </span>
+                    <span class="tab-btn-badge badge-amber">Camera / File</span>
+                </button>
+
+            </div>
+        </div>
+
+
+        <!-- WORKSPACE PANEL -->
+        <div class="workspace-panel" data-scroll-reveal="zoom">
+
+            <!-- HUD TECH ACCENTS -->
+            <div class="hud-corner hud-corner-tl" aria-hidden="true"></div>
+            <div class="hud-corner hud-corner-tr" aria-hidden="true"></div>
+            <div class="hud-corner hud-corner-bl" aria-hidden="true"></div>
+            <div class="hud-corner hud-corner-br" aria-hidden="true"></div>
+            <div class="hud-laser-scan" aria-hidden="true"></div>
+
+            <!-- TAB 1 PANE: MESSAGE SCANNER -->
+            <div id="pane-message" class="scanner-tab-pane active" role="tabpanel" aria-labelledby="tabBtn-message">
+
+                <div class="workspace-heading">
+                    <div>
+                        <div class="workspace-kicker">
+                            <span class="status-dot"></span>
+                            <span id="workspaceLabel">AI MESSAGE ANALYSIS</span>
+                        </div>
+                        <h2 id="workspaceTitle">Analyze a suspicious message</h2>
+                        <p id="workspaceDescription">
+                            Paste text from an SMS, email, WhatsApp, or DM to detect phishing, social engineering, impersonation, and fraudulent links.
+                        </p>
                     </div>
 
-                    <h2 id="workspaceTitle">Analyze a message</h2>
-
-                    <p id="workspaceDescription">
-                        Paste a suspicious message to inspect its content.
-                    </p>
+                    <div class="workspace-symbol" id="workspaceSymbol">
+                        💬
+                    </div>
                 </div>
 
-                <div class="workspace-symbol" id="workspaceSymbol">
-                    ✳
-                </div>
+                <form id="messageForm" class="scanner-form">
+
+                    <div class="form-header-bar">
+                        <label for="messageInput" class="form-label">
+                            MESSAGE CONTENT
+                        </label>
+                        <button type="button" class="form-action-link" id="clearMessageInput">Clear text</button>
+                    </div>
+
+                    <textarea id="messageInput"
+                              class="form-control custom-input"
+                              maxlength="10000"
+                              rows="6"
+                              placeholder="Paste your SMS, email body, WhatsApp alert, or suspicious notification here..."
+                              required></textarea>
+
+                    <div class="input-meta">
+                        <span>🛡️ Untrusted data is isolated. Never enter banking passwords.</span>
+                        <span id="characterCount" class="counter-badge">0 / 10000</span>
+                    </div>
+
+                    <div class="example-section">
+                        <span class="example-label">TRY AN EXAMPLE:</span>
+
+                        <button type="button"
+                                class="example-chip chip-danger"
+                                data-example="Congratulations! You have won a $1,000 Walmart Gift Card. Click this urgent link to claim your reward: http://walmart-claim-reward.xyz/win">
+                            <span>🎁</span> Fake Prize Scam
+                        </button>
+
+                        <button type="button"
+                                class="example-chip chip-warning"
+                                data-example="URGENT: Your Wells Fargo debit card has been suspended due to 3 failed logins. Visit http://wellsfargo-verify-alert.com to restore your access immediately.">
+                            <span>🏦</span> Bank Phishing Alert
+                        </button>
+
+                        <button type="button"
+                                class="example-chip chip-safe"
+                                data-example="Hi Aman, our quarterly sprint retrospective has been scheduled for tomorrow at 3:00 PM. Please review the shared meeting notes beforehand.">
+                            <span>💬</span> Normal Meeting Chat
+                        </button>
+                    </div>
+
+                    <button type="submit" class="scan-button" id="messageSubmit">
+                        <span>Analyze Message with AI</span>
+                        <span class="button-arrow">→</span>
+                    </button>
+
+                </form>
 
             </div>
 
 
-            <!-- MESSAGE FORM -->
+            <!-- TAB 2 PANE: EMAIL CHECKER -->
+            <div id="pane-email" class="scanner-tab-pane hidden" role="tabpanel" aria-labelledby="tabBtn-email">
 
-            <form id="messageForm" class="scanner-form">
-
-                <label for="messageInput" class="form-label">
-                    MESSAGE CONTENT
-                </label>
-
-                <textarea id="messageInput"
-                          class="form-control custom-input"
-                          maxlength="10000"
-                          rows="6"
-                          placeholder="Paste your SMS, email content, or suspicious message here..."
-                          required></textarea>
-
-                <div class="input-meta">
-                    <span>Don't include passwords or sensitive personal data.</span>
-                    <span id="characterCount">0 / 10000</span>
-                </div>
-
-                <div class="example-section">
-
-                    <span class="example-label">TRY AN EXAMPLE</span>
-
-                    <button type="button"
-                            class="example-chip"
-                            data-example="Congratulations! You have won a free prize. Click this suspicious link to claim your reward.">
-                        Suspicious prize
-                    </button>
-
-                    <button type="button"
-                            class="example-chip"
-                            data-example="Hi Aman, our meeting has been moved to 3 PM tomorrow. Please confirm your availability.">
-                        Normal message
-                    </button>
-
-                </div>
-
-                <button type="submit" class="scan-button" id="messageSubmit">
-                    <span>Analyze Message</span>
-                    <span class="button-arrow">→</span>
-                </button>
-
-            </form>
-
-
-            <!-- EMAIL FORM -->
-
-            <form id="emailForm" class="scanner-form hidden">
-
-                <label for="emailInput" class="form-label">
-                    EMAIL ADDRESS
-                </label>
-
-                <input type="email"
-                       id="emailInput"
-                       class="form-control custom-input"
-                       maxlength="254"
-                       placeholder="example@domain.com"
-                       required>
-
-                <p class="input-help">
-                    Check technical email indicators, not sender trustworthiness.
-                </p>
-
-                <button type="submit" class="scan-button" id="emailSubmit">
-                    <span>Validate Email</span>
-                    <span class="button-arrow">→</span>
-                </button>
-
-            </form>
-
-
-            <!-- PHONE FORM -->
-
-            <form id="phoneForm" class="scanner-form hidden">
-
-                <label for="phoneInput" class="form-label">
-                    PHONE NUMBER
-                </label>
-
-                <input type="tel"
-                       id="phoneInput"
-                       class="form-control custom-input"
-                       maxlength="30"
-                       placeholder="+91 9876543210"
-                       required>
-
-                <label for="countryInput" class="form-label mt-4">
-                    COUNTRY CODE (OPTIONAL)
-                </label>
-
-                <select id="countryInput" class="form-select custom-input">
-
-                    <option value="">Auto / API default</option>
-                    <option value="IN">India</option>
-                    <option value="US">United States</option>
-                    <option value="GB">United Kingdom</option>
-                    <option value="CA">Canada</option>
-                    <option value="AU">Australia</option>
-
-                </select>
-
-                <p class="input-help">
-                    Number validation does not confirm spam-report history.
-                </p>
-
-                <button type="submit" class="scan-button" id="phoneSubmit">
-                    <span>Check Phone Number</span>
-                    <span class="button-arrow">→</span>
-                </button>
-
-            </form>
-
-
-            <!-- QR CODE VERIFIER FORM -->
-
-            <form id="qrForm" class="scanner-form hidden">
-
-                <div class="qr-mode-tabs">
-                    <button type="button" class="qr-tab-btn active" data-mode="camera">
-                        <span>📷</span> Camera Scan
-                    </button>
-                    <button type="button" class="qr-tab-btn" data-mode="file">
-                        <span>📁</span> Upload Image
-                    </button>
-                    <button type="button" class="qr-tab-btn" data-mode="paste">
-                        <span>⌨️</span> Paste Link / Text
-                    </button>
-                </div>
-
-                <!-- 1. CAMERA SCAN MODE -->
-                <div id="qrCameraMode" class="qr-mode-panel">
-                    <div class="qr-camera-container">
-                        <div id="qrReader" class="qr-reader-box"></div>
-                        <div id="qrCameraPlaceholder" class="qr-placeholder">
-                            <span class="qr-big-icon">📷</span>
-                            <h4>Real-Time Camera QR Scanner</h4>
-                            <p>Point your webcam or phone camera at any QR code to scan and verify it instantly.</p>
-                            <button type="button" id="startCameraBtn" class="scan-button" style="width: auto; padding: 12px 24px;">
-                                <span>Start Camera</span>
-                            </button>
+                <div class="workspace-heading">
+                    <div>
+                        <div class="workspace-kicker">
+                            <span class="status-dot"></span>
+                            <span>EMAIL REPUTATION & THREAT INTELLIGENCE</span>
                         </div>
+                        <h2>Inspect an email address</h2>
+                        <p>
+                            Verify whether an email is deliverable, hosted on a throwaway disposable service (TempMail/Guerrilla), 
+                            backed by valid MX records, or linked to known credential breaches.
+                        </p>
                     </div>
-                    <div id="qrCameraControls" class="qr-camera-controls hidden">
-                        <button type="button" id="stopCameraBtn" class="clear-button">Stop Camera ×</button>
-                        <span class="qr-scanning-indicator"><span class="status-dot"></span> Camera Active: Scanning...</span>
+
+                    <div class="workspace-symbol">
+                        ✉️
                     </div>
                 </div>
 
-                <!-- 2. FILE UPLOAD MODE -->
-                <div id="qrFileMode" class="qr-mode-panel hidden">
-                    <div id="qrDropzone" class="qr-dropzone">
-                        <input type="file" id="qrFileInput" accept="image/*" class="qr-file-input">
-                        <div id="qrDropContent" class="qr-dropzone-content">
-                            <span class="qr-big-icon">🖼️</span>
-                            <h4>Drop your QR code image here</h4>
-                            <p>or click to select a screenshot / photo (PNG, JPG, WebP)</p>
-                            <span class="qr-browse-badge">Browse File</span>
+                <form id="emailForm" class="scanner-form">
+
+                    <div class="form-header-bar">
+                        <label for="emailInput" class="form-label">
+                            EMAIL ADDRESS
+                        </label>
+                        <button type="button" class="form-action-link" id="clearEmailInput">Clear</button>
+                    </div>
+
+                    <div class="input-with-icon">
+                        <span class="input-lead-icon">@</span>
+                        <input type="email"
+                               id="emailInput"
+                               class="form-control custom-input input-padded"
+                               maxlength="254"
+                               placeholder="e.g. security-alert@paypal-billing.xyz or user@company.com"
+                               required>
+                    </div>
+
+                    <p class="input-help">
+                        <span>ℹ️</span> Checks deliverability, MX mail server health, disposable domain detection, and reputation scores.
+                    </p>
+
+                    <div class="example-section">
+                        <span class="example-label">TRY AN EXAMPLE:</span>
+
+                        <button type="button"
+                                class="example-chip email-example-chip chip-danger"
+                                data-email="spammer99283@guerrillamail.com">
+                            <span>🔥</span> Disposable Burner Email
+                        </button>
+
+                        <button type="button"
+                                class="example-chip email-example-chip chip-warning"
+                                data-email="security-apple-support@paypa1-billing.xyz">
+                            <span>⚠️</span> Phishing Typosquatting
+                        </button>
+
+                        <button type="button"
+                                class="example-chip email-example-chip chip-safe"
+                                data-email="support@google.com">
+                            <span>🏢</span> Official Corporate Mailbox
+                        </button>
+                    </div>
+
+                    <button type="submit" class="scan-button" id="emailSubmit">
+                        <span>Check Email Reputation</span>
+                        <span class="button-arrow">→</span>
+                    </button>
+
+                </form>
+
+            </div>
+
+
+            <!-- TAB 3 PANE: PHONE CHECKER -->
+            <div id="pane-phone" class="scanner-tab-pane hidden" role="tabpanel" aria-labelledby="tabBtn-phone">
+
+                <div class="workspace-heading">
+                    <div>
+                        <div class="workspace-kicker">
+                            <span class="status-dot"></span>
+                            <span>TELECOM INTELLIGENCE & CARRIER REGISTRY</span>
                         </div>
-                        <div id="qrFilePreview" class="qr-preview-box hidden">
-                            <img id="qrPreviewImg" src="" alt="QR Preview">
-                            <span id="qrFileName" class="qr-file-name"></span>
-                        </div>
+                        <h2>Inspect a phone number</h2>
+                        <p>
+                            Examine phone validity, identify VoIP virtual lines frequently used for robocall fraud and spoofing, 
+                            and evaluate fraud risk ratings across international networks.
+                        </p>
+                    </div>
+
+                    <div class="workspace-symbol">
+                        📞
                     </div>
                 </div>
 
-                <!-- 3. PASTE / MANUAL INPUT MODE -->
-                <div id="qrPasteMode" class="qr-mode-panel hidden">
-                    <label for="qrTextInput" class="form-label">
-                        QR CODE CONTENT / DECODED LINK
-                    </label>
+                <form id="phoneForm" class="scanner-form">
 
-                    <textarea id="qrTextInput"
-                              class="form-control custom-input"
-                              rows="4"
-                              placeholder="Paste a decoded QR link (e.g. https://... or upi://pay?pa=...)..."></textarea>
+                    <div class="row g-3">
+                        <div class="col-md-7">
+                            <label for="phoneInput" class="form-label">
+                                PHONE NUMBER (INTERNATIONAL FORMAT RECOMMENDED)
+                            </label>
+                            <input type="tel"
+                                   id="phoneInput"
+                                   class="form-control custom-input"
+                                   maxlength="30"
+                                   placeholder="+1 (415) 200-7986 or +91 98765 43210"
+                                   required>
+                        </div>
+
+                        <div class="col-md-5">
+                            <label for="countryInput" class="form-label">
+                                COUNTRY REGION (OPTIONAL)
+                            </label>
+                            <select id="countryInput" class="form-select custom-input">
+                                <option value="">Auto-Detect from prefix</option>
+                                <option value="IN">🇮🇳 India (+91)</option>
+                                <option value="US">🇺🇸 United States (+1)</option>
+                                <option value="GB">🇬🇧 United Kingdom (+44)</option>
+                                <option value="CA">🇨🇦 Canada (+1)</option>
+                                <option value="AU">🇦🇺 Australia (+61)</option>
+                                <option value="DE">🇩🇪 Germany (+49)</option>
+                                <option value="FR">🇫🇷 France (+33)</option>
+                                <option value="AE">🇦🇪 UAE (+971)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <p class="input-help">
+                        <span>ℹ️</span> Validates number against telecom ITU standards, extracts carrier & line type (Mobile, Landline, VoIP), and checks abuse registries.
+                    </p>
+
+                    <div class="example-section">
+                        <span class="example-label">TRY AN EXAMPLE:</span>
+
+                        <button type="button"
+                                class="example-chip phone-example-chip chip-warning"
+                                data-phone="+14152007986"
+                                data-country="US">
+                            <span>📞</span> US Carrier Line
+                        </button>
+
+                        <button type="button"
+                                class="example-chip phone-example-chip chip-safe"
+                                data-phone="+919876543210"
+                                data-country="IN">
+                            <span>🇮🇳</span> India Mobile Format
+                        </button>
+
+                        <button type="button"
+                                class="example-chip phone-example-chip chip-danger"
+                                data-phone="+18005550199"
+                                data-country="US">
+                            <span>⚠️</span> Toll-Free Robocall Format
+                        </button>
+                    </div>
+
+                    <button type="submit" class="scan-button" id="phoneSubmit">
+                        <span>Verify Phone Number</span>
+                        <span class="button-arrow">→</span>
+                    </button>
+
+                </form>
+
+            </div>
+
+
+            <!-- TAB 4 PANE: QR CODE VERIFIER -->
+            <div id="pane-qr" class="scanner-tab-pane hidden" role="tabpanel" aria-labelledby="tabBtn-qr">
+
+                <div class="workspace-heading">
+                    <div>
+                        <div class="workspace-kicker">
+                            <span class="status-dot"></span>
+                            <span>QUISHING & QR PHISHING ARBITER</span>
+                        </div>
+                        <h2>Verify QR code security</h2>
+                        <p>
+                            Quishing (QR phishing) bypasses traditional spam filters. Scan directly with your camera, 
+                            upload a screenshot, or paste a link to unmask redirects, detect UPI money-request traps, and analyze malware links.
+                        </p>
+                    </div>
+
+                    <div class="workspace-symbol">
+                        🛡️
+                    </div>
                 </div>
 
-                <!-- EXAMPLES -->
-                <div class="example-section mt-4">
-                    <span class="example-label">TRY AN EXAMPLE</span>
+                <form id="qrForm" class="scanner-form">
 
-                    <button type="button"
-                            class="example-chip qr-example-chip"
-                            data-example="upi://pay?pa=cashbackreward@ybl&pn=GooglePayReward&am=2999&cu=INR&tn=Pay%20to%20claim%20scratch%20card">
-                        Fake UPI Cashback Trap
+                    <div class="qr-mode-tabs">
+                        <button type="button" class="qr-tab-btn active" data-mode="camera">
+                            <span>📷</span> Camera Scan
+                        </button>
+                        <button type="button" class="qr-tab-btn" data-mode="file">
+                            <span>📁</span> Upload Image
+                        </button>
+                        <button type="button" class="qr-tab-btn" data-mode="paste">
+                            <span>⌨️</span> Paste Link / Text
+                        </button>
+                    </div>
+
+                    <!-- 1. CAMERA SCAN MODE -->
+                    <div id="qrCameraMode" class="qr-mode-panel">
+                        <div class="qr-camera-container">
+                            <div id="qrReader" class="qr-reader-box"></div>
+                            <div id="qrCameraPlaceholder" class="qr-placeholder">
+                                <span class="qr-big-icon">📷</span>
+                                <h4>Real-Time Camera Scanner</h4>
+                                <p>Point your webcam or mobile camera at any QR code on paper, screen, or parking meter to analyze it in real time.</p>
+                                <button type="button" id="startCameraBtn" class="scan-button camera-start-btn">
+                                    <span>Activate Camera</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="qrCameraControls" class="qr-camera-controls hidden">
+                            <button type="button" id="stopCameraBtn" class="clear-button">Stop Camera ×</button>
+                            <span class="qr-scanning-indicator"><span class="status-dot"></span> Camera Active: Scanning frames...</span>
+                        </div>
+                    </div>
+
+                    <!-- 2. FILE UPLOAD MODE -->
+                    <div id="qrFileMode" class="qr-mode-panel hidden">
+                        <div id="qrDropzone" class="qr-dropzone">
+                            <input type="file" id="qrFileInput" accept="image/*" class="qr-file-input">
+                            <div id="qrDropContent" class="qr-dropzone-content">
+                                <span class="qr-big-icon">🖼️</span>
+                                <h4>Drop your QR code screenshot or photo here</h4>
+                                <p>Supports PNG, JPG, JPEG, WebP images</p>
+                                <span class="qr-browse-badge">Browse File</span>
+                            </div>
+                            <div id="qrFilePreview" class="qr-preview-box hidden">
+                                <img id="qrPreviewImg" src="" alt="QR Preview">
+                                <div class="qr-preview-details">
+                                    <span id="qrFileName" class="qr-file-name"></span>
+                                    <button type="button" id="qrRemoveFileBtn" class="qr-remove-btn">Remove file ×</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. PASTE / MANUAL INPUT MODE -->
+                    <div id="qrPasteMode" class="qr-mode-panel hidden">
+                        <label for="qrTextInput" class="form-label">
+                            DECODED QR LINK OR RAW STRING
+                        </label>
+                        <textarea id="qrTextInput"
+                                  class="form-control custom-input"
+                                  rows="4"
+                                  placeholder="Paste a link decoded from a QR code (e.g. https://... or upi://pay?pa=...)..."></textarea>
+                    </div>
+
+                    <!-- EXAMPLES -->
+                    <div class="example-section mt-4">
+                        <span class="example-label">TRY AN EXAMPLE:</span>
+
+                        <button type="button"
+                                class="example-chip qr-example-chip chip-danger"
+                                data-example="upi://pay?pa=cashbackreward@ybl&pn=GooglePayReward&am=2999&cu=INR&tn=Pay%20to%20claim%20scratch%20card">
+                            <span>💸</span> Fake UPI Cashback Trap
+                        </button>
+
+                        <button type="button"
+                                class="example-chip qr-example-chip chip-warning"
+                                data-example="https://login.microsoftonline.com-auth-alert.xyz/verify">
+                            <span>🎣</span> Quishing Microsoft Login
+                        </button>
+
+                        <button type="button"
+                                class="example-chip qr-example-chip chip-safe"
+                                data-example="https://github.com/JanhaviCode/SpamDetector">
+                            <span>✓</span> Safe GitHub Repository Link
+                        </button>
+                    </div>
+
+                    <button type="submit" class="scan-button mt-4" id="qrSubmit">
+                        <span>Verify QR Code Security</span>
+                        <span class="button-arrow">→</span>
                     </button>
 
-                    <button type="button"
-                            class="example-chip qr-example-chip"
-                            data-example="https://login.microsoftonline.com-auth-alert.xyz/verify">
-                        Quishing Phishing Link
-                    </button>
+                </form>
 
-                    <button type="button"
-                            class="example-chip qr-example-chip"
-                            data-example="https://github.com/JanhaviCode/SpamDetector">
-                        Safe GitHub Link
-                    </button>
-                </div>
-
-                <button type="submit" class="scan-button mt-4" id="qrSubmit">
-                    <span>Verify QR Code</span>
-                    <span class="button-arrow">→</span>
-                </button>
-
-            </form>
+            </div>
 
 
-            <!-- LOADING -->
+            <!-- SHARED INTERACTIVE LOADING STATE -->
 
             <div id="loadingState" class="loading-state hidden">
 
                 <div class="scanner-animation">
                     <div class="scanner-ring"></div>
                     <div class="scanner-ring ring-two"></div>
-                    <div class="scanner-core">✳</div>
+                    <div class="scanner-ring ring-three"></div>
+                    <div class="scanner-radar-sweep"></div>
+                    <div class="scanner-core">⚡</div>
                 </div>
 
-                <h3 id="loadingTitle">Analyzing your message</h3>
+                <h3 id="loadingTitle">Analyzing Security Signals</h3>
 
                 <p id="loadingDescription">
-                    Processing your request securely...
+                    AI threat models & validation engines are inspecting supplied payload...
                 </p>
 
                 <div class="loading-progress">
@@ -472,32 +690,44 @@
             </div>
 
 
-            <!-- ERROR -->
+            <!-- SHARED ERROR BOX -->
 
             <div id="errorBox" class="error-box hidden" role="alert">
 
                 <span class="error-icon">!</span>
 
-                <div>
-                    <strong>Something went wrong</strong>
+                <div class="error-body">
+                    <strong>Scan Error Occurred</strong>
                     <p id="errorMessage"></p>
                 </div>
+
+                <button type="button" class="error-dismiss" id="dismissError">×</button>
 
             </div>
 
 
-            <!-- RESULTS -->
+            <!-- RESULTS SECTION -->
 
             <div id="resultSection" class="result-section hidden">
 
                 <div class="result-topline">
-                    <span class="section-label">ANALYSIS REPORT</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="status-dot"></span>
+                        <span class="section-label">THREAT INTELLIGENCE REPORT</span>
+                    </div>
 
-                    <button id="clearResult"
-                            type="button"
-                            class="clear-button">
-                        Clear result ×
-                    </button>
+                    <div class="d-flex align-items-center gap-2">
+                        <button id="copyReportBtn"
+                                type="button"
+                                class="report-action-btn">
+                            <span>📋</span> Copy Report
+                        </button>
+                        <button id="clearResult"
+                                type="button"
+                                class="clear-button">
+                            Clear result ×
+                        </button>
+                    </div>
                 </div>
 
                 <div id="resultContent"></div>
@@ -511,65 +741,84 @@
 
     <!-- SESSION HISTORY -->
 
-    <section class="history-section">
+    <section class="history-section" data-scroll-reveal="fade-up">
 
         <div class="section-heading">
 
             <div>
-                <p class="section-label">SESSION ACTIVITY</p>
+                <p class="section-label">SESSION AUDIT LOG</p>
                 <h2>Recent scans</h2>
             </div>
 
-            <button id="clearHistory" class="clear-button" type="button">
-                Clear history
-            </button>
+            <div class="d-flex align-items-center gap-2">
+                <button id="clearHistory" class="clear-button" type="button">
+                    Clear history
+                </button>
+            </div>
 
+        </div>
+
+        <!-- HISTORY FILTER TABS -->
+        <div class="history-filter-bar">
+            <button type="button" class="history-filter-btn active" data-filter="all">All (0)</button>
+            <button type="button" class="history-filter-btn" data-filter="Message Scanner">💬 Messages</button>
+            <button type="button" class="history-filter-btn" data-filter="Email Checker">✉️ Emails</button>
+            <button type="button" class="history-filter-btn" data-filter="Phone Checker">📞 Phones</button>
+            <button type="button" class="history-filter-btn" data-filter="QR Verifier">🛡️ QR Codes</button>
         </div>
 
         <div id="historyList" class="history-list">
 
             <div class="empty-history">
                 <span>◷</span>
-                <p>Your recent scans will appear here.</p>
+                <p>Your recent scans in this session will appear here.</p>
             </div>
 
         </div>
 
         <p class="history-notice">
-            History is stored only in this browser session and is cleared
-            when the session ends.
+            🔒 Privacy by design: History is ephemeral, stored only in your browser session, and is never persisted across sessions.
         </p>
 
     </section>
 
 
-    <!-- DISCLAIMER -->
+    <!-- SECURITY NOTICE -->
 
-    <section class="disclaimer">
+    <section class="disclaimer" data-scroll-reveal="fade-up">
 
         <span class="disclaimer-icon">ⓘ</span>
 
         <p>
-            <strong>Security notice:</strong>
-            AI classifications and validation results are estimates.
-            They cannot guarantee that a message, email, or phone number
-            is safe or malicious. Never share passwords or verification codes.
+            <strong>Cybersecurity Advisory:</strong>
+            SpamShield AI classifications, deliverability audits, and carrier risk scores are threat estimations. 
+            No automated engine can guarantee 100% safety against novel zero-day attacks. Never share one-time passwords (OTP), banking credentials, or private keys.
         </p>
 
     </section>
 
 
-    <footer class="footer">
-        <a href="/">SpamShield AI</a>
-        <span>Built for a safer digital experience.</span>
+    <!-- FOOTER -->
+
+    <footer class="footer" data-scroll-reveal="fade-up">
+        <div class="d-flex align-items-center gap-2">
+            <span class="brand-icon brand-icon-sm">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+            </span>
+            <a href="/">SpamShield AI</a>
+        </div>
+        <span>Built with Gemini Flash AI & Telecom Threat Intelligence</span>
     </footer>
 
 </main>
 
+<!-- TOAST ALERT CONTAINER -->
+<div id="toastContainer" class="toast-container"></div>
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 
 </body>
 </html>
-

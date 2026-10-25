@@ -1,4 +1,6 @@
 const toolCards = document.querySelectorAll(".tool-card");
+const workspaceTabButtons = document.querySelectorAll(".workspace-tab-btn");
+const scannerTabPanes = document.querySelectorAll(".scanner-tab-pane");
 
 const messageForm = document.getElementById("messageForm");
 const emailForm = document.getElementById("emailForm");
@@ -11,27 +13,41 @@ const loadingDescription = document.getElementById("loadingDescription");
 
 const errorBox = document.getElementById("errorBox");
 const errorMessage = document.getElementById("errorMessage");
+const dismissErrorBtn = document.getElementById("dismissError");
 
 const resultSection = document.getElementById("resultSection");
 const resultContent = document.getElementById("resultContent");
-
-const workspaceLabel = document.getElementById("workspaceLabel");
-const workspaceTitle = document.getElementById("workspaceTitle");
-const workspaceDescription = document.getElementById("workspaceDescription");
-const workspaceSymbol = document.getElementById("workspaceSymbol");
+const copyReportBtn = document.getElementById("copyReportBtn");
+const clearResultBtn = document.getElementById("clearResult");
 
 const characterCount = document.getElementById("characterCount");
 const messageInput = document.getElementById("messageInput");
+const emailInput = document.getElementById("emailInput");
+const phoneInput = document.getElementById("phoneInput");
+const countryInput = document.getElementById("countryInput");
+const clearMessageInput = document.getElementById("clearMessageInput");
+const clearEmailInput = document.getElementById("clearEmailInput");
 
 const historyList = document.getElementById("historyList");
+const clearHistoryBtn = document.getElementById("clearHistory");
+const historyFilterButtons = document.querySelectorAll(".history-filter-btn");
 
 let currentTool = "message";
+let currentHistoryFilter = "all";
 let history = [];
+
+// Per-tab cached analysis results
+const tabResults = {
+    message: null,
+    email: null,
+    phone: null,
+    qr: null
+};
 
 
 /* --------------------------------
-   SAFE HTML HELPERS
--------------------------------- */
+   SAFE HTML & TOAST HELPERS
+   -------------------------------- */
 
 function escapeHTML(value) {
     return String(value ?? "").replace(/[&<>"']/g, character => ({
@@ -44,121 +60,229 @@ function escapeHTML(value) {
 }
 
 function showElement(element) {
-    element.classList.remove("hidden");
+    if (element) element.classList.remove("hidden");
 }
 
 function hideElement(element) {
-    element.classList.add("hidden");
+    if (element) element.classList.add("hidden");
+}
+
+function showToast(message, icon = "✦") {
+    const container = document.getElementById("toastContainer");
+    if (!container) return;
+
+    const toast = document.createElement("div");
+    toast.className = "toast-message";
+    toast.innerHTML = `<span>${icon}</span> <span>${escapeHTML(message)}</span>`;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 3100);
 }
 
 
 /* --------------------------------
-   TOOL SWITCHING
--------------------------------- */
+   UNIFIED TAB SWITCHING SYSTEM
+   -------------------------------- */
 
-const toolConfiguration = {
-    message: {
-        label: "AI MESSAGE ANALYSIS",
-        title: "Analyze a message",
-        description: "Paste a suspicious message to inspect its content.",
-        symbol: "✳"
-    },
+function switchTab(toolId, shouldScroll = false) {
+    const validTools = ["message", "email", "phone", "qr"];
+    if (!validTools.includes(toolId)) toolId = "message";
 
-    email: {
-        label: "EMAIL VALIDATION",
-        title: "Inspect an email address",
-        description: "Check technical email characteristics and deliverability.",
-        symbol: "✉"
-    },
+    currentTool = toolId;
 
-    phone: {
-        label: "PHONE VALIDATION",
-        title: "Inspect a phone number",
-        description: "Validate a number and inspect available metadata.",
-        symbol: "⌕"
-    },
+    // 1. Update Workspace Tab Buttons & Pop Active Tab Icon
+    workspaceTabButtons.forEach(btn => {
+        const isSelected = btn.dataset.tab === toolId;
+        btn.classList.toggle("active", isSelected);
+        btn.setAttribute("aria-selected", isSelected ? "true" : "false");
 
-    qr: {
-        label: "QR CODE & QUISHING SCANNER",
-        title: "Verify a QR Code",
-        description: "Scan with camera, upload an image, or paste decoded links to detect phishing & fraud.",
-        symbol: "⚅"
+        if (isSelected) {
+            const icon = btn.querySelector(".tab-btn-icon");
+            if (icon) {
+                icon.style.animation = "none";
+                void icon.offsetWidth; // Reflow to restart icon pop animation
+                icon.style.animation = "";
+            }
+        }
+    });
+
+    // 2. Update Tool Cards (Overview row)
+    toolCards.forEach(card => {
+        card.classList.toggle("active", card.dataset.tool === toolId);
+    });
+
+    // 3. Update Tab Panes with Lively Spring Zoom-In
+    scannerTabPanes.forEach(pane => {
+        const paneId = `pane-${toolId}`;
+        const isActive = pane.id === paneId;
+        if (isActive) {
+            pane.classList.remove("hidden");
+            // Force animation restart so zoom-in fires smoothly
+            pane.classList.remove("active");
+            void pane.offsetWidth; // Trigger reflow
+            pane.classList.add("active");
+        } else {
+            pane.classList.remove("active");
+            pane.classList.add("hidden");
+        }
+    });
+
+    // 4. Hide loading & error states
+    hideElement(loadingState);
+    hideElement(errorBox);
+
+    // 5. Restore or hide result for this specific tab
+    if (tabResults[toolId]) {
+        resultContent.innerHTML = tabResults[toolId];
+        showElement(resultSection);
+        const resHtml = tabResults[toolId];
+        document.body.classList.remove("threat-spam", "threat-suspicious", "threat-legitimate");
+        if (resHtml.includes("status-high") || resHtml.includes("SPAM")) {
+            document.body.classList.add("threat-spam");
+        } else if (resHtml.includes("status-medium") || resHtml.includes("SUSPICIOUS")) {
+            document.body.classList.add("threat-suspicious");
+        } else if (resHtml.includes("status-low") || resHtml.includes("LEGITIMATE")) {
+            document.body.classList.add("threat-legitimate");
+        }
+    } else {
+        hideElement(resultSection);
+        document.body.classList.remove("threat-spam", "threat-suspicious", "threat-legitimate");
     }
-};
 
+    // 6. Stop camera if moving away from QR tab
+    if (toolId !== "qr" && typeof stopCameraScanner === "function") {
+        stopCameraScanner();
+    }
 
+    // 7. Update URL hash without causing page jump
+    try {
+        history.replaceState(null, null, `#${toolId}`);
+    } catch (e) {
+        // Fallback or restricted environment
+    }
+
+    // 8. Smooth scroll if initiated from overview cards
+    if (shouldScroll) {
+        const workspaceElem = document.getElementById("scannerWorkspace");
+        if (workspaceElem) {
+            workspaceElem.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        }
+    }
+}
+
+// Workspace tab bar click listeners
+workspaceTabButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+        switchTab(btn.dataset.tab, false);
+    });
+});
+
+// Tool card click listeners
 toolCards.forEach(card => {
     card.addEventListener("click", () => {
-        const selectedTool = card.dataset.tool;
-
-        currentTool = selectedTool;
-
-        toolCards.forEach(item => {
-            item.classList.toggle("active", item === card);
-        });
-
-        const config = toolConfiguration[selectedTool];
-
-        workspaceLabel.textContent = config.label;
-        workspaceTitle.textContent = config.title;
-        workspaceDescription.textContent = config.description;
-        workspaceSymbol.textContent = config.symbol;
-
-        hideElement(loadingState);
-        hideElement(errorBox);
-        hideElement(resultSection);
-
-        messageForm.classList.toggle("hidden", selectedTool !== "message");
-        emailForm.classList.toggle("hidden", selectedTool !== "email");
-        phoneForm.classList.toggle("hidden", selectedTool !== "phone");
-        if (qrForm) qrForm.classList.toggle("hidden", selectedTool !== "qr");
-
-        if (selectedTool !== "qr" && typeof stopCameraScanner === "function") {
-            stopCameraScanner();
-        }
-
-        document.querySelector(".workspace-panel").scrollIntoView({
-            behavior: "smooth",
-            block: "start"
-        });
+        switchTab(card.dataset.tool, true);
     });
+});
+
+// Load tab from URL hash if present
+window.addEventListener("DOMContentLoaded", () => {
+    const hash = window.location.hash.replace("#", "").toLowerCase();
+    if (["message", "email", "phone", "qr"].includes(hash)) {
+        switchTab(hash, false);
+    }
 });
 
 
 /* --------------------------------
-   MESSAGE COUNTER AND EXAMPLES
--------------------------------- */
+   INPUT CLEARING & EXAMPLES
+   -------------------------------- */
 
-messageInput.addEventListener("input", () => {
-    characterCount.textContent =
-        `${messageInput.value.length} / 10000`;
+if (clearMessageInput && messageInput) {
+    clearMessageInput.addEventListener("click", () => {
+        messageInput.value = "";
+        if (characterCount) characterCount.textContent = "0 / 10000";
+        messageInput.focus();
+        showToast("Message cleared", "✓");
+    });
+}
+
+if (clearEmailInput && emailInput) {
+    clearEmailInput.addEventListener("click", () => {
+        emailInput.value = "";
+        emailInput.focus();
+        showToast("Email cleared", "✓");
+    });
+}
+
+if (dismissErrorBtn && errorBox) {
+    dismissErrorBtn.addEventListener("click", () => {
+        hideElement(errorBox);
+    });
+}
+
+// Character counter for message input
+if (messageInput && characterCount) {
+    messageInput.addEventListener("input", () => {
+        characterCount.textContent = `${messageInput.value.length} / 10000`;
+    });
+}
+
+// Message example chips
+document.querySelectorAll(".example-chip:not(.email-example-chip):not(.phone-example-chip):not(.qr-example-chip)").forEach(button => {
+    button.addEventListener("click", () => {
+        if (messageInput) {
+            messageInput.value = button.dataset.example;
+            if (characterCount) characterCount.textContent = `${messageInput.value.length} / 10000`;
+            messageInput.focus();
+            showToast("Example loaded into Message Scanner", "💬");
+        }
+    });
 });
 
-
-document.querySelectorAll(".example-chip").forEach(button => {
+// Email example chips
+document.querySelectorAll(".email-example-chip").forEach(button => {
     button.addEventListener("click", () => {
-        messageInput.value = button.dataset.example;
+        if (emailInput) {
+            emailInput.value = button.dataset.email;
+            emailInput.focus();
+            showToast("Example email loaded", "✉️");
+        }
+    });
+});
 
-        characterCount.textContent =
-            `${messageInput.value.length} / 10000`;
-
-        messageInput.focus();
+// Phone example chips
+document.querySelectorAll(".phone-example-chip").forEach(button => {
+    button.addEventListener("click", () => {
+        if (phoneInput) {
+            phoneInput.value = button.dataset.phone;
+            if (countryInput && button.dataset.country) {
+                countryInput.value = button.dataset.country;
+            }
+            phoneInput.focus();
+            showToast("Example phone number loaded", "📞");
+        }
     });
 });
 
 
 /* --------------------------------
    API REQUEST HELPER
--------------------------------- */
+   -------------------------------- */
 
 async function postJSON(endpoint, payload) {
     const response = await fetch(endpoint, {
         method: "POST",
-
         headers: {
             "Content-Type": "application/json"
         },
-
         body: JSON.stringify(payload)
     });
 
@@ -176,7 +300,7 @@ async function postJSON(endpoint, payload) {
 
 /* --------------------------------
    LOADING AND ERROR STATES
--------------------------------- */
+   -------------------------------- */
 
 function startLoading(title, description, form) {
     hideElement(errorBox);
@@ -187,15 +311,13 @@ function startLoading(title, description, form) {
     loadingTitle.textContent = title;
     loadingDescription.textContent = description;
 
-    const button = form.querySelector('button[type="submit"]');
-
+    const button = form ? form.querySelector('button[type="submit"]') : null;
     if (button) {
         button.disabled = true;
     }
 
     return button;
 }
-
 
 function stopLoading(button) {
     hideElement(loadingState);
@@ -205,24 +327,22 @@ function stopLoading(button) {
     }
 }
 
-
 function showError(message) {
     errorMessage.textContent = message;
     showElement(errorBox);
+    errorBox.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 
 /* --------------------------------
-   RESULT HELPERS
--------------------------------- */
+   RESULT HELPERS & CACHING
+   -------------------------------- */
 
 function formatBoolean(value) {
     if (value === true) return "Yes";
     if (value === false) return "No";
-
     return "Unknown";
 }
-
 
 function formatValue(value) {
     if (value === null || value === undefined || value === "") {
@@ -238,7 +358,6 @@ function formatValue(value) {
     return String(value);
 }
 
-
 function renderMetric(label, value) {
     return `
         <div class="result-metric">
@@ -248,18 +367,26 @@ function renderMetric(label, value) {
     `;
 }
 
-
 function renderNotice(message) {
     return `
         <p class="result-notice">${escapeHTML(message)}</p>
     `;
 }
 
-
 function showResults(html) {
+    tabResults[currentTool] = html;
     resultContent.innerHTML = html;
-
     showElement(resultSection);
+
+    // Update dynamic background threat atmosphere
+    document.body.classList.remove("threat-spam", "threat-suspicious", "threat-legitimate");
+    if (html.includes("status-high") || html.includes("SPAM")) {
+        document.body.classList.add("threat-spam");
+    } else if (html.includes("status-medium") || html.includes("SUSPICIOUS")) {
+        document.body.classList.add("threat-suspicious");
+    } else if (html.includes("status-low") || html.includes("LEGITIMATE")) {
+        document.body.classList.add("threat-legitimate");
+    }
 
     resultSection.scrollIntoView({
         behavior: "smooth",
@@ -267,10 +394,38 @@ function showResults(html) {
     });
 }
 
+// Copy Report Action
+if (copyReportBtn) {
+    copyReportBtn.addEventListener("click", () => {
+        if (!resultContent || !resultContent.innerText.trim()) {
+            showToast("No active report to copy.", "⚠️");
+            return;
+        }
+
+        const header = `[SpamShield AI Security Intelligence Report]\nGenerated: ${new Date().toLocaleString()}\nTool: ${currentTool.toUpperCase()}\n----------------------------------------\n`;
+        const body = resultContent.innerText;
+
+        navigator.clipboard.writeText(header + body).then(() => {
+            showToast("Report copied to clipboard!", "📋");
+        }).catch(() => {
+            showToast("Could not copy report to clipboard.", "⚠️");
+        });
+    });
+}
+
+// Clear Result Action
+if (clearResultBtn) {
+    clearResultBtn.addEventListener("click", () => {
+        tabResults[currentTool] = null;
+        hideElement(resultSection);
+        showToast("Analysis result cleared", "✓");
+    });
+}
+
 
 /* --------------------------------
-   HISTORY
--------------------------------- */
+   HISTORY & FILTERING SYSTEM
+   -------------------------------- */
 
 function addHistory(tool, summary, status) {
     history.unshift({
@@ -283,25 +438,40 @@ function addHistory(tool, summary, status) {
         })
     });
 
-    history = history.slice(0, 8);
-
+    history = history.slice(0, 15);
     renderHistory();
 }
 
-
 function renderHistory() {
+    // Update filter buttons count
+    const allBtn = document.querySelector('.history-filter-btn[data-filter="all"]');
+    if (allBtn) allBtn.textContent = `All (${history.length})`;
+
     if (history.length === 0) {
         historyList.innerHTML = `
             <div class="empty-history">
                 <span>◷</span>
-                <p>Your recent scans will appear here.</p>
+                <p>Your recent scans in this session will appear here.</p>
             </div>
         `;
-
         return;
     }
 
-    historyList.innerHTML = history.map(item => {
+    const filtered = currentHistoryFilter === "all"
+        ? history
+        : history.filter(item => item.tool.toLowerCase().includes(currentHistoryFilter.toLowerCase()));
+
+    if (filtered.length === 0) {
+        historyList.innerHTML = `
+            <div class="empty-history">
+                <span>⌕</span>
+                <p>No recent scans found for ${escapeHTML(currentHistoryFilter)}.</p>
+            </div>
+        `;
+        return;
+    }
+
+    historyList.innerHTML = filtered.map(item => {
         const badgeClass = {
             SPAM: "spam",
             SUSPICIOUS: "suspicious",
@@ -325,59 +495,65 @@ function renderHistory() {
     }).join("");
 }
 
-
-document.getElementById("clearHistory").addEventListener("click", () => {
-    history = [];
-    renderHistory();
+historyFilterButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+        currentHistoryFilter = btn.dataset.filter;
+        historyFilterButtons.forEach(b => b.classList.toggle("active", b === btn));
+        renderHistory();
+    });
 });
 
-
-document.getElementById("clearResult").addEventListener("click", () => {
-    hideElement(resultSection);
-});
+if (clearHistoryBtn) {
+    clearHistoryBtn.addEventListener("click", () => {
+        history = [];
+        renderHistory();
+        showToast("Session history cleared", "✓");
+    });
+}
 
 
 /* --------------------------------
-   MESSAGE SCANNER
--------------------------------- */
+   MESSAGE SCANNER SUBMISSION
+   -------------------------------- */
 
-messageForm.addEventListener("submit", async event => {
-    event.preventDefault();
+if (messageForm) {
+    messageForm.addEventListener("submit", async event => {
+        event.preventDefault();
 
-    const message = messageInput.value.trim();
+        const message = messageInput.value.trim();
 
-    if (!message) {
-        showError("Please enter a message.");
-        return;
-    }
+        if (!message) {
+            showError("Please enter a message to analyze.");
+            return;
+        }
 
-    const button = startLoading(
-        "Analyzing your message",
-        "Gemini is examining the supplied text...",
-        messageForm
-    );
-
-    try {
-        const data = await postJSON(
-            "/api/analyze-message",
-            { message }
+        const button = startLoading(
+            "Analyzing Message with Gemini AI",
+            "Inspecting semantics, urgency flags, and phishing lures...",
+            messageForm
         );
 
-        renderMessageResult(data);
+        try {
+            const data = await postJSON(
+                "/api/analyze-message",
+                { message }
+            );
 
-        addHistory(
-            "Message Scanner",
-            message.slice(0, 65),
-            data.classification
-        );
+            renderMessageResult(data);
 
-    } catch (error) {
-        showError(error.message);
-    } finally {
-        stopLoading(button);
-    }
-});
+            addHistory(
+                "Message Scanner",
+                message.slice(0, 65),
+                data.classification
+            );
 
+        } catch (error) {
+            showError(error.message);
+        } finally {
+            stopLoading(button);
+        }
+    });
+}
 
 function renderMessageResult(data) {
     const classification = data.classification;
@@ -388,51 +564,37 @@ function renderMessageResult(data) {
         LOW: "status-low"
     }[data.risk_level] || "status-medium";
 
-    const reasons = Array.isArray(data.reasons)
-        ? data.reasons
-        : [];
-
+    const reasons = Array.isArray(data.reasons) ? data.reasons : [];
     const reasonHTML = reasons.length
-        ? reasons.map(reason => `
-            <li>${escapeHTML(reason)}</li>
-        `).join("")
-        : "<li>No detailed reasons were returned.</li>";
+        ? reasons.map(reason => `<li>${escapeHTML(reason)}</li>`).join("")
+        : "<li>No suspicious indicators detected in message payload.</li>";
 
     showResults(`
         <div class="result-card">
 
             <span class="result-status ${riskClass}">
-                ${classification === "SPAM" ? "⚠" : "✳"}
+                ${classification === "SPAM" ? "⚠" : classification === "LEGITIMATE" ? "✓" : "✳"}
                 ${escapeHTML(classification)}
             </span>
 
-            <h3>
-                ${escapeHTML(data.category || "Message analysis")}
-            </h3>
+            <h3>${escapeHTML(data.category || "Message Threat Analysis")}</h3>
 
             <p class="result-description">
                 ${escapeHTML(data.explanation)}
             </p>
 
             <div class="result-grid">
-
                 ${renderMetric("RISK LEVEL", data.risk_level)}
 
                 <div class="result-metric">
-                    <span class="metric-label">MODEL CONFIDENCE ESTIMATE</span>
-
+                    <span class="metric-label">MODEL THREAT CONFIDENCE</span>
                     <div class="metric-value">
                         ${escapeHTML(data.confidence)}%
                     </div>
-
                     <div class="confidence-bar">
-                        <div style="width: ${Math.max(
-                            0,
-                            Math.min(100, Number(data.confidence) || 0)
-                        )}%"></div>
+                        <div style="width: ${Math.max(0, Math.min(100, Number(data.confidence) || 0))}%"></div>
                     </div>
                 </div>
-
             </div>
 
             <h4 class="result-subheading">Why was it classified this way?</h4>
@@ -447,7 +609,7 @@ function renderMessageResult(data) {
             </div>
 
             ${renderNotice(
-                "AI assessment only. This is not a guarantee that the message is safe or malicious."
+                "Gemini AI threat assessment. While highly accurate, always independently verify unexpected communications before sending sensitive data."
             )}
 
         </div>
@@ -456,41 +618,42 @@ function renderMessageResult(data) {
 
 
 /* --------------------------------
-   EMAIL CHECKER
--------------------------------- */
+   EMAIL CHECKER SUBMISSION
+   -------------------------------- */
 
-emailForm.addEventListener("submit", async event => {
-    event.preventDefault();
+if (emailForm) {
+    emailForm.addEventListener("submit", async event => {
+        event.preventDefault();
 
-    const email = document.getElementById("emailInput").value.trim();
+        const email = emailInput.value.trim();
 
-    const button = startLoading(
-        "Validating email",
-        "Checking available email and domain indicators...",
-        emailForm
-    );
-
-    try {
-        const data = await postJSON(
-            "/api/check-email",
-            { email }
+        const button = startLoading(
+            "Inspecting Email Reputation",
+            "Verifying mail server MX records, SMTP handshake, and disposable domains...",
+            emailForm
         );
 
-        renderEmailResult(data);
+        try {
+            const data = await postJSON(
+                "/api/check-email",
+                { email }
+            );
 
-        addHistory(
-            "Email Checker",
-            email,
-            data.classification || (data.deliverability === "DELIVERABLE" ? "LEGITIMATE" : "SUSPICIOUS")
-        );
+            renderEmailResult(data);
 
-    } catch (error) {
-        showError(error.message);
-    } finally {
-        stopLoading(button);
-    }
-});
+            addHistory(
+                "Email Checker",
+                email,
+                data.classification || (data.deliverability === "DELIVERABLE" ? "LEGITIMATE" : "SUSPICIOUS")
+            );
 
+        } catch (error) {
+            showError(error.message);
+        } finally {
+            stopLoading(button);
+        }
+    });
+}
 
 function renderEmailResult(data) {
     const classification = data.classification || (
@@ -509,7 +672,7 @@ function renderEmailResult(data) {
     const reasons = Array.isArray(data.reasons) ? data.reasons : [];
     const reasonHTML = reasons.length
         ? reasons.map(reason => `<li>${escapeHTML(reason)}</li>`).join("")
-        : "<li>No threat factors detected.</li>";
+        : "<li>Clean mailbox with no negative threat records detected.</li>";
 
     const deliverability = String(data.deliverability || "UNKNOWN").toUpperCase();
 
@@ -521,7 +684,7 @@ function renderEmailResult(data) {
                 ${escapeHTML(classification)}
             </span>
 
-            <h3>${escapeHTML(data.category || "Email threat analysis")}</h3>
+            <h3>${escapeHTML(data.category || "Email Threat Assessment")}</h3>
 
             <p class="result-description">
                 ${escapeHTML(data.explanation || data.message)}
@@ -554,7 +717,7 @@ function renderEmailResult(data) {
             </div>
             ` : ""}
 
-            <h4 class="result-subheading" style="margin-top: 1.5rem;">Technical & Domain Details</h4>
+            <h4 class="result-subheading" style="margin-top: 1.5rem;">Technical & Domain Diagnostics</h4>
 
             <div class="result-grid">
                 ${renderMetric("EMAIL ADDRESS", data.email)}
@@ -573,7 +736,7 @@ function renderEmailResult(data) {
             </div>
 
             ${renderNotice(
-                "Email threat and reputation assessment. While this flags disposable domains and known threat scores, always verify unexpected requests."
+                "Email threat assessment evaluates domain security and disposable flags. Always verify unsolicited sender requests."
             )}
 
         </div>
@@ -582,43 +745,43 @@ function renderEmailResult(data) {
 
 
 /* --------------------------------
-   PHONE CHECKER
--------------------------------- */
+   PHONE CHECKER SUBMISSION
+   -------------------------------- */
 
-phoneForm.addEventListener("submit", async event => {
-    event.preventDefault();
+if (phoneForm) {
+    phoneForm.addEventListener("submit", async event => {
+        event.preventDefault();
 
-    const phone = document.getElementById("phoneInput").value.trim();
+        const phone = phoneInput.value.trim();
+        const country = countryInput ? countryInput.value : "";
 
-    const country = document.getElementById("countryInput").value;
-
-    const button = startLoading(
-        "Checking phone number",
-        "Inspecting available number and carrier information...",
-        phoneForm
-    );
-
-    try {
-        const data = await postJSON(
-            "/api/check-phone",
-            { phone, country }
+        const button = startLoading(
+            "Verifying Telecom Network Signals",
+            "Checking international carrier registries, VoIP lines, and spam reports...",
+            phoneForm
         );
 
-        renderPhoneResult(data);
+        try {
+            const data = await postJSON(
+                "/api/check-phone",
+                { phone, country }
+            );
 
-        addHistory(
-            "Phone Checker",
-            phone,
-            data.classification || (data.valid === true ? "LEGITIMATE" : "SUSPICIOUS")
-        );
+            renderPhoneResult(data);
 
-    } catch (error) {
-        showError(error.message);
-    } finally {
-        stopLoading(button);
-    }
-});
+            addHistory(
+                "Phone Checker",
+                phone,
+                data.classification || (data.valid === true ? "LEGITIMATE" : "SUSPICIOUS")
+            );
 
+        } catch (error) {
+            showError(error.message);
+        } finally {
+            stopLoading(button);
+        }
+    });
+}
 
 function renderPhoneResult(data) {
     const classification = data.classification || (
@@ -636,7 +799,7 @@ function renderPhoneResult(data) {
     const reasons = Array.isArray(data.reasons) ? data.reasons : [];
     const reasonHTML = reasons.length
         ? reasons.map(reason => `<li>${escapeHTML(reason)}</li>`).join("")
-        : "<li>No phone threat factors detected.</li>";
+        : "<li>Clean carrier line with no reported abuse complaints.</li>";
 
     const countryName = data.country && typeof data.country === "object"
         ? data.country.name
@@ -668,7 +831,7 @@ function renderPhoneResult(data) {
                 ${escapeHTML(classification)}
             </span>
 
-            <h3>${escapeHTML(data.category || "Phone threat analysis")}</h3>
+            <h3>${escapeHTML(data.category || "Phone Threat Analysis")}</h3>
 
             <p class="result-description">
                 ${escapeHTML(data.explanation || data.message)}
@@ -718,11 +881,11 @@ function renderPhoneResult(data) {
                 ${data.is_voip !== undefined ? renderMetric("VOIP / VIRTUAL", formatBoolean(data.is_voip)) : ""}
                 ${data.is_prepaid !== undefined ? renderMetric("PREPAID LINE", formatBoolean(data.is_prepaid)) : ""}
                 ${data.is_abuse_detected !== undefined ? renderMetric("ABUSE REPORTED", formatBoolean(data.is_abuse_detected)) : ""}
-                ${renderMetric("SPOOFING RISK", "HIGH on unexpected calls")}
+                ${renderMetric("SPOOFING RISK", "HIGH on unexpected incoming calls")}
             </div>
 
             ${renderNotice(
-                "Zero-Trust Phone Assessment: Technical carrier routing validates line existence, but cannot verify who holds the receiver. Always practice zero-trust."
+                "Zero-Trust Phone Assessment: Technical carrier routing validates line existence, but cannot verify who holds the phone. Practice zero-trust on unsolicited calls."
             )}
 
         </div>
@@ -730,17 +893,14 @@ function renderPhoneResult(data) {
 }
 
 
-
-
 /* ------------------------------------------
    QR CODE & QUISHING VERIFIER
------------------------------------------- */
+   ------------------------------------------ */
 
 let currentQrMode = "camera";
 let html5QrCodeScanner = null;
 let isCameraActive = false;
 
-// Sub-mode tab switcher (Camera / File / Paste)
 const qrTabButtons = document.querySelectorAll(".qr-tab-btn");
 const qrCameraMode = document.getElementById("qrCameraMode");
 const qrFileMode = document.getElementById("qrFileMode");
@@ -753,6 +913,7 @@ const qrFilePreview = document.getElementById("qrFilePreview");
 const qrPreviewImg = document.getElementById("qrPreviewImg");
 const qrFileName = document.getElementById("qrFileName");
 const qrDropContent = document.getElementById("qrDropContent");
+const qrRemoveFileBtn = document.getElementById("qrRemoveFileBtn");
 
 const startCameraBtn = document.getElementById("startCameraBtn");
 const stopCameraBtn = document.getElementById("stopCameraBtn");
@@ -780,7 +941,6 @@ qrTabButtons.forEach(btn => {
 document.querySelectorAll(".qr-example-chip").forEach(chip => {
     chip.addEventListener("click", () => {
         const example = chip.dataset.example;
-        // Switch to paste tab
         const pasteBtn = document.querySelector('.qr-tab-btn[data-mode="paste"]');
         if (pasteBtn) pasteBtn.click();
 
@@ -880,13 +1040,24 @@ if (qrDropzone && qrFileInput) {
     });
 }
 
+if (qrRemoveFileBtn) {
+    qrRemoveFileBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (qrFileInput) qrFileInput.value = "";
+        if (qrPreviewImg) qrPreviewImg.src = "";
+        if (qrFileName) qrFileName.textContent = "";
+        hideElement(qrFilePreview);
+        showElement(qrDropContent);
+        showToast("QR file removed", "✓");
+    });
+}
+
 async function handleQrImageFile(file) {
     if (!file || !file.type.startsWith("image/")) {
         showError("Please upload a valid image file (PNG, JPG, WebP).");
         return;
     }
 
-    // Show thumbnail
     const reader = new FileReader();
     reader.onload = e => {
         if (qrPreviewImg) qrPreviewImg.src = e.target.result;
@@ -896,7 +1067,6 @@ async function handleQrImageFile(file) {
     };
     reader.readAsDataURL(file);
 
-    // Decode QR code from file
     initQrScanner();
     if (!html5QrCodeScanner) {
         showError("QR reader not initialized. Try pasting the link.");
@@ -904,8 +1074,8 @@ async function handleQrImageFile(file) {
     }
 
     const button = startLoading(
-        "Scanning QR image",
-        "Reading and decoding QR code visual data...",
+        "Scanning QR Image File",
+        "Reading and decoding visual matrix data...",
         qrForm
     );
 
@@ -962,7 +1132,6 @@ if (qrForm) {
     });
 }
 
-// Render QR Security Report
 function renderQrResult(data) {
     const classification = data.classification || "SUSPICIOUS";
     const riskLevel = data.risk_level || "MEDIUM";
@@ -1038,7 +1207,7 @@ function renderQrResult(data) {
 
             <div class="qr-payload-display">
                 <code>${escapeHTML(data.payload)}</code>
-                <button type="button" class="copy-btn" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent)">Copy</button>
+                <button type="button" class="copy-btn" onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent); showToast('Decoded link copied!', '📋');">Copy</button>
             </div>
 
             <div class="result-grid">
@@ -1095,4 +1264,444 @@ function renderQrResult(data) {
 
         </div>
     `);
+}
+
+
+/* ========================================================
+   CYBER CONSTELLATION MOVING BACKGROUND SYSTEM
+   ======================================================== */
+
+function initCyberBackground() {
+    const canvas = document.getElementById("cyberCanvas");
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let width = 0;
+    let height = 0;
+    let animationFrameId = null;
+    let particles = [];
+    let sparks = [];
+    const PARTICLE_COUNT = Math.min(50, Math.max(22, Math.floor(window.innerWidth / 38)));
+    const MAX_DISTANCE = 130;
+    const spotlight = document.getElementById("cyberSpotlight");
+    const gridOverlay = document.querySelector(".cyber-grid-overlay");
+
+    const mouse = {
+        x: null,
+        y: null,
+        radius: 140
+    };
+
+    function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+    }
+
+    class Particle {
+        constructor() {
+            this.x = Math.random() * width;
+            this.y = Math.random() * height;
+            this.vx = (Math.random() - 0.5) * 0.4;
+            this.vy = (Math.random() - 0.5) * 0.4;
+            this.radius = Math.random() * 1.8 + 1;
+            this.baseAlpha = Math.random() * 0.45 + 0.25;
+            this.color = Math.random() > 0.4 ? "167, 139, 250" : "96, 165, 250";
+        }
+
+        update() {
+            if (this.x < 0) this.x = width;
+            else if (this.x > width) this.x = 0;
+
+            if (this.y < 0) this.y = height;
+            else if (this.y > height) this.y = 0;
+
+            // Interactive mouse gentle repulsion / attraction
+            if (mouse.x !== null && mouse.y !== null) {
+                const dx = mouse.x - this.x;
+                const dy = mouse.y - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < mouse.radius && dist > 1) {
+                    const force = (mouse.radius - dist) / mouse.radius;
+                    this.x += (dx / dist) * force * 0.8;
+                    this.y += (dy / dist) * force * 0.8;
+                }
+            }
+
+            this.x += this.vx;
+            this.y += this.vy;
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(${this.color}, ${this.baseAlpha})`;
+            ctx.shadowBlur = 6;
+            ctx.shadowColor = `rgba(${this.color}, 0.6)`;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+    }
+
+    class Spark {
+        constructor(x, y) {
+            this.x = x;
+            this.y = y;
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 3.5 + 1.2;
+            this.vx = Math.cos(angle) * speed;
+            this.vy = Math.sin(angle) * speed;
+            this.radius = Math.random() * 2 + 1;
+            this.alpha = 1;
+            this.decay = Math.random() * 0.03 + 0.02;
+            this.color = Math.random() > 0.5 ? "96, 165, 250" : "167, 139, 250";
+        }
+
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+            this.vx *= 0.95;
+            this.vy *= 0.95;
+            this.alpha -= this.decay;
+        }
+
+        draw() {
+            if (this.alpha <= 0) return;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(${this.color}, ${this.alpha})`;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = `rgba(${this.color}, 0.8)`;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+    }
+
+    function init() {
+        resize();
+        particles = [];
+        sparks = [];
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            particles.push(new Particle());
+        }
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, width, height);
+
+        // 1. Draw connections between nearby particles
+        for (let i = 0; i < particles.length; i++) {
+            for (let j = i + 1; j < particles.length; j++) {
+                const dx = particles[i].x - particles[j].x;
+                const dy = particles[i].y - particles[j].y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < MAX_DISTANCE) {
+                    const alpha = (1 - dist / MAX_DISTANCE) * 0.16;
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.strokeStyle = `rgba(167, 139, 250, ${alpha})`;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            }
+        }
+
+        // 2. Interactive: Draw connection lines from mouse cursor to nearby particles
+        if (mouse.x !== null && mouse.y !== null) {
+            for (let i = 0; i < particles.length; i++) {
+                const dx = mouse.x - particles[i].x;
+                const dy = mouse.y - particles[i].y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < 165) {
+                    const alpha = (1 - dist / 165) * 0.32;
+                    ctx.beginPath();
+                    ctx.moveTo(mouse.x, mouse.y);
+                    ctx.lineTo(particles[i].x, particles[i].y);
+                    ctx.strokeStyle = `rgba(167, 139, 250, ${alpha})`;
+                    ctx.lineWidth = 1.2;
+                    ctx.stroke();
+                }
+            }
+        }
+
+        // 3. Draw & update particles
+        for (let i = 0; i < particles.length; i++) {
+            particles[i].update();
+            particles[i].draw();
+        }
+
+        // 4. Draw & update click sparks
+        for (let i = sparks.length - 1; i >= 0; i--) {
+            sparks[i].update();
+            sparks[i].draw();
+            if (sparks[i].alpha <= 0) {
+                sparks.splice(i, 1);
+            }
+        }
+
+        animationFrameId = requestAnimationFrame(animate);
+    }
+
+    let resizeTimer;
+    window.addEventListener("resize", () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            resize();
+        }, 150);
+    });
+
+    window.addEventListener("mousemove", (e) => {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+
+        // Move background spotlight with mouse
+        if (spotlight) {
+            spotlight.style.setProperty("--mouse-screen-x", `${e.clientX}px`);
+            spotlight.style.setProperty("--mouse-screen-y", `${e.clientY}px`);
+        }
+
+        // Subtle interactive cyber grid parallax
+        if (gridOverlay) {
+            const ox = ((e.clientX - window.innerWidth / 2) * 0.02).toFixed(1);
+            const oy = ((e.clientY - window.innerHeight / 2) * 0.02).toFixed(1);
+            gridOverlay.style.transform = `translate3d(${ox}px, ${oy}px, 0)`;
+        }
+    });
+
+    window.addEventListener("mouseleave", () => {
+        mouse.x = null;
+        mouse.y = null;
+    });
+
+    // Spawn sparks on click
+    window.addEventListener("click", (e) => {
+        for (let i = 0; i < 10; i++) {
+            sparks.push(new Spark(e.clientX, e.clientY));
+        }
+    });
+
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        } else {
+            animationFrameId = requestAnimationFrame(animate);
+        }
+    });
+
+    init();
+    animate();
+}
+
+/* ========================================================
+   SCROLL-DRIVEN REVEAL & INTERSECTION OBSERVER SYSTEM
+   ======================================================== */
+
+function initScrollReveal() {
+    const revealElements = document.querySelectorAll("[data-scroll-reveal]");
+    if (!revealElements.length) return;
+
+    if ("IntersectionObserver" in window) {
+        const observerOptions = {
+            root: null,
+            threshold: 0.08,
+            rootMargin: "0px 0px -30px 0px"
+        };
+
+        const revealObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add("is-revealed");
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        revealElements.forEach(el => {
+            const rect = el.getBoundingClientRect();
+            if (rect.top < window.innerHeight - 30) {
+                el.classList.add("is-revealed");
+            } else {
+                revealObserver.observe(el);
+            }
+        });
+    } else {
+        revealElements.forEach(el => el.classList.add("is-revealed"));
+    }
+}
+
+
+/* ========================================================
+   SMOOTH PARALLAX MOVEMENT ON SCROLL
+   ======================================================== */
+
+function initScrollParallax() {
+    const cyberBg = document.querySelector(".cyber-moving-bg");
+    if (!cyberBg) return;
+
+    let ticking = false;
+
+    window.addEventListener("scroll", () => {
+        if (!ticking) {
+            window.requestAnimationFrame(() => {
+                const scrolled = window.pageYOffset || document.documentElement.scrollTop;
+                cyberBg.style.transform = `translate3d(0, ${scrolled * 0.12}px, 0)`;
+                ticking = false;
+            });
+            ticking = true;
+        }
+    }, { passive: true });
+}
+
+
+/* ========================================================
+   INTERACTIVE 3D CARD TILT & SPECULAR LIGHT PHYSICS
+   ======================================================== */
+
+function initCardTiltPhysics() {
+    const tiltCards = document.querySelectorAll('[data-tilt="true"]');
+
+    tiltCards.forEach(card => {
+        let isHovered = false;
+
+        card.addEventListener("mouseenter", () => {
+            isHovered = true;
+            card.style.transition = "transform 0.12s ease-out, box-shadow 0.25s ease, border-color 0.25s ease";
+        });
+
+        card.addEventListener("mousemove", (e) => {
+            if (!isHovered) return;
+            const rect = card.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / rect.width;
+            const y = (e.clientY - rect.top) / rect.height;
+
+            const rotateX = ((y - 0.5) * -14).toFixed(2);
+            const rotateY = ((x - 0.5) * 14).toFixed(2);
+
+            card.style.transform = `perspective(900px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-8px) scale3d(1.035, 1.035, 1.035)`;
+            card.style.setProperty("--glare-x", `${(x * 100).toFixed(1)}%`);
+            card.style.setProperty("--glare-y", `${(y * 100).toFixed(1)}%`);
+        });
+
+        card.addEventListener("mouseleave", () => {
+            isHovered = false;
+            card.style.transition = "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s ease, border-color 0.25s ease";
+            card.style.transform = "";
+            card.style.setProperty("--glare-x", "50%");
+            card.style.setProperty("--glare-y", "50%");
+        });
+    });
+}
+
+
+/* ========================================================
+   CUSTOM INTERACTIVE CYBER CURSOR SYSTEM
+   ======================================================== */
+
+function initCustomCursor() {
+    const cursorDot = document.getElementById("cursorDot");
+    const cursorRing = document.getElementById("cursorRing");
+    if (!cursorDot || !cursorRing) return;
+
+    let mouseX = -100;
+    let mouseY = -100;
+    let ringX = -100;
+    let ringY = -100;
+    let isVisible = false;
+    let ringAnimationId = null;
+
+    window.addEventListener("mousemove", (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+
+        if (!isVisible) {
+            cursorDot.style.opacity = "1";
+            cursorRing.style.opacity = "1";
+            ringX = mouseX;
+            ringY = mouseY;
+            isVisible = true;
+        }
+
+        // Instant precision dot placement
+        cursorDot.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0)`;
+    });
+
+    window.addEventListener("mouseleave", () => {
+        cursorDot.style.opacity = "0";
+        cursorRing.style.opacity = "0";
+        isVisible = false;
+    });
+
+    window.addEventListener("mouseenter", () => {
+        cursorDot.style.opacity = "1";
+        cursorRing.style.opacity = "1";
+        isVisible = true;
+    });
+
+    window.addEventListener("mousedown", () => {
+        cursorDot.classList.add("cursor-active");
+        cursorRing.classList.add("cursor-active");
+    });
+
+    window.addEventListener("mouseup", () => {
+        cursorDot.classList.remove("cursor-active");
+        cursorRing.classList.remove("cursor-active");
+    });
+
+    // Dynamic hover expansion on interactive UI elements
+    const interactiveSelector = "button, a, input, textarea, select, .tool-card, .example-chip, .workspace-tab-btn, .history-filter-btn, .qr-dropzone, .form-action-link, .clear-button, .report-action-btn";
+
+    document.addEventListener("mouseover", (e) => {
+        if (e.target && e.target.closest && e.target.closest(interactiveSelector)) {
+            cursorDot.classList.add("cursor-hover");
+            cursorRing.classList.add("cursor-hover");
+        }
+    });
+
+    document.addEventListener("mouseout", (e) => {
+        if (e.target && e.target.closest && e.target.closest(interactiveSelector)) {
+            cursorDot.classList.remove("cursor-hover");
+            cursorRing.classList.remove("cursor-hover");
+        }
+    });
+
+    // Inertial lerp ring animation loop (spring trailing physics)
+    function renderRing() {
+        if (isVisible) {
+            const dx = mouseX - ringX;
+            const dy = mouseY - ringY;
+            if (Math.abs(dx) < 0.05 && Math.abs(dy) < 0.05) {
+                ringX = mouseX;
+                ringY = mouseY;
+            } else {
+                ringX += dx * 0.22;
+                ringY += dy * 0.22;
+            }
+            cursorRing.style.transform = `translate3d(${ringX.toFixed(2)}px, ${ringY.toFixed(2)}px, 0)`;
+        }
+        ringAnimationId = requestAnimationFrame(renderRing);
+    }
+    renderRing();
+}
+
+
+/* ========================================================
+   MAIN INITIALIZATION RUNNER
+   ======================================================== */
+
+function initLiveInteractions() {
+    initCyberBackground();
+    initCustomCursor();
+    initScrollReveal();
+    initScrollParallax();
+    initCardTiltPhysics();
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initLiveInteractions);
+} else {
+    initLiveInteractions();
 }
