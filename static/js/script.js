@@ -1268,8 +1268,46 @@ function renderQrResult(data) {
 
 
 /* ========================================================
-   CYBER CONSTELLATION MOVING BACKGROUND SYSTEM
+   CYBER CONSTELLATION STARRY BACKGROUND SYSTEM
    ======================================================== */
+
+function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius, rotation, fillStyle, glowColor, glowBlur) {
+    let rot = (Math.PI / 2) * 3 + (rotation || 0);
+    const step = Math.PI / spikes;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - outerRadius);
+
+    for (let i = 0; i < spikes; i++) {
+        let x = cx + Math.cos(rot) * outerRadius;
+        let y = cy + Math.sin(rot) * outerRadius;
+        ctx.lineTo(x, y);
+        rot += step;
+
+        x = cx + Math.cos(rot) * innerRadius;
+        y = cy + Math.sin(rot) * innerRadius;
+        ctx.lineTo(x, y);
+        rot += step;
+    }
+    ctx.lineTo(cx, cy - outerRadius);
+    ctx.closePath();
+
+    ctx.fillStyle = fillStyle;
+    if (glowColor && glowBlur) {
+        ctx.shadowColor = glowColor;
+        ctx.shadowBlur = glowBlur;
+    }
+    ctx.fill();
+
+    // Central radiant starlight core gleam
+    ctx.beginPath();
+    ctx.arc(cx, cy, Math.max(1.2, outerRadius * 0.25), 0, Math.PI * 2);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+
+    ctx.restore();
+}
 
 function initCyberBackground() {
     const canvas = document.getElementById("cyberCanvas");
@@ -1281,17 +1319,19 @@ function initCyberBackground() {
     let width = 0;
     let height = 0;
     let animationFrameId = null;
-    let particles = [];
+    let stars = [];
+    let microStars = [];
     let sparks = [];
-    const PARTICLE_COUNT = Math.min(50, Math.max(22, Math.floor(window.innerWidth / 38)));
-    const MAX_DISTANCE = 130;
+    const STAR_COUNT = Math.min(55, Math.max(25, Math.floor(window.innerWidth / 35)));
+    const MICRO_STAR_COUNT = Math.min(65, Math.max(30, Math.floor(window.innerWidth / 28)));
+    const MAX_DISTANCE = 140;
     const spotlight = document.getElementById("cyberSpotlight");
     const gridOverlay = document.querySelector(".cyber-grid-overlay");
 
     const mouse = {
         x: null,
         y: null,
-        radius: 140
+        radius: 155
     };
 
     function resize() {
@@ -1299,15 +1339,23 @@ function initCyberBackground() {
         height = canvas.height = window.innerHeight;
     }
 
-    class Particle {
+    // Drifting constellation stars (4-pointed cross sparkle stars and 5-pointed celestial stars)
+    class Star {
         constructor() {
             this.x = Math.random() * width;
             this.y = Math.random() * height;
-            this.vx = (Math.random() - 0.5) * 0.4;
-            this.vy = (Math.random() - 0.5) * 0.4;
-            this.radius = Math.random() * 1.8 + 1;
-            this.baseAlpha = Math.random() * 0.45 + 0.25;
-            this.color = Math.random() > 0.4 ? "167, 139, 250" : "96, 165, 250";
+            this.vx = (Math.random() - 0.5) * 0.35;
+            this.vy = (Math.random() - 0.5) * 0.35;
+            this.spikes = Math.random() > 0.2 ? 4 : 5;
+            // Noticeably larger star size (5.5px to 12.5px radius)
+            this.outerRadius = Math.random() * 7 + 5.5;
+            this.innerRadius = this.outerRadius * (this.spikes === 4 ? 0.26 : 0.4);
+            this.rotation = Math.random() * Math.PI * 2;
+            this.rotationSpeed = (Math.random() - 0.5) * 0.008;
+            this.baseAlpha = Math.random() * 0.35 + 0.55;
+            this.twinklePhase = Math.random() * Math.PI * 2;
+            this.twinkleSpeed = Math.random() * 0.035 + 0.015;
+            this.color = Math.random() > 0.4 ? "167, 139, 250" : (Math.random() > 0.3 ? "96, 165, 250" : "244, 246, 255");
         }
 
         update() {
@@ -1317,7 +1365,10 @@ function initCyberBackground() {
             if (this.y < 0) this.y = height;
             else if (this.y > height) this.y = 0;
 
-            // Interactive mouse gentle repulsion / attraction
+            this.rotation += this.rotationSpeed;
+            this.twinklePhase += this.twinkleSpeed;
+
+            // Interactive mouse gentle gravity / repulsion
             if (mouse.x !== null && mouse.y !== null) {
                 const dx = mouse.x - this.x;
                 const dy = mouse.y - this.y;
@@ -1334,33 +1385,76 @@ function initCyberBackground() {
         }
 
         draw() {
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(${this.color}, ${this.baseAlpha})`;
-            ctx.shadowBlur = 6;
-            ctx.shadowColor = `rgba(${this.color}, 0.6)`;
-            ctx.fill();
-            ctx.shadowBlur = 0;
+            const alpha = Math.max(0.25, Math.min(1, this.baseAlpha + Math.sin(this.twinklePhase) * 0.35));
+            drawStar(
+                ctx,
+                this.x,
+                this.y,
+                this.spikes,
+                this.outerRadius,
+                this.innerRadius,
+                this.rotation,
+                `rgba(${this.color}, ${alpha})`,
+                `rgba(${this.color}, 0.85)`,
+                12
+            );
         }
     }
 
+    // Distant background twinkling micro-stars (now clearly visible, 3px to 6px)
+    class MicroStar {
+        constructor() {
+            this.x = Math.random() * width;
+            this.y = Math.random() * height;
+            this.radius = Math.random() * 3.2 + 2.8;
+            this.twinklePhase = Math.random() * Math.PI * 2;
+            this.twinkleSpeed = Math.random() * 0.03 + 0.012;
+            this.color = Math.random() > 0.3 ? "244, 246, 255" : "196, 181, 253";
+        }
+
+        update() {
+            this.twinklePhase += this.twinkleSpeed;
+        }
+
+        draw() {
+            const alpha = Math.max(0.2, Math.min(0.95, 0.55 + Math.sin(this.twinklePhase) * 0.35));
+            drawStar(
+                ctx,
+                this.x,
+                this.y,
+                4,
+                this.radius,
+                this.radius * 0.25,
+                0,
+                `rgba(${this.color}, ${alpha})`,
+                `rgba(${this.color}, 0.65)`,
+                6
+            );
+        }
+    }
+
+    // Interactive star sparkle burst on click
     class Spark {
         constructor(x, y) {
             this.x = x;
             this.y = y;
             const angle = Math.random() * Math.PI * 2;
-            const speed = Math.random() * 3.5 + 1.2;
+            const speed = Math.random() * 4 + 1.5;
             this.vx = Math.cos(angle) * speed;
             this.vy = Math.sin(angle) * speed;
-            this.radius = Math.random() * 2 + 1;
+            this.outerRadius = Math.random() * 4.5 + 4;
+            this.innerRadius = this.outerRadius * 0.26;
+            this.rotation = Math.random() * Math.PI * 2;
+            this.rotationSpeed = (Math.random() - 0.5) * 0.15;
             this.alpha = 1;
             this.decay = Math.random() * 0.03 + 0.02;
-            this.color = Math.random() > 0.5 ? "96, 165, 250" : "167, 139, 250";
+            this.color = Math.random() > 0.4 ? "167, 139, 250" : (Math.random() > 0.3 ? "96, 165, 250" : "254, 240, 138");
         }
 
         update() {
             this.x += this.vx;
             this.y += this.vy;
+            this.rotation += this.rotationSpeed;
             this.vx *= 0.95;
             this.vy *= 0.95;
             this.alpha -= this.decay;
@@ -1368,40 +1462,57 @@ function initCyberBackground() {
 
         draw() {
             if (this.alpha <= 0) return;
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(${this.color}, ${this.alpha})`;
-            ctx.shadowBlur = 8;
-            ctx.shadowColor = `rgba(${this.color}, 0.8)`;
-            ctx.fill();
-            ctx.shadowBlur = 0;
+            drawStar(
+                ctx,
+                this.x,
+                this.y,
+                4,
+                this.outerRadius,
+                this.innerRadius,
+                this.rotation,
+                `rgba(${this.color}, ${this.alpha})`,
+                `rgba(${this.color}, 0.9)`,
+                12
+            );
         }
     }
 
     function init() {
         resize();
-        particles = [];
+        stars = [];
+        microStars = [];
         sparks = [];
-        for (let i = 0; i < PARTICLE_COUNT; i++) {
-            particles.push(new Particle());
+
+        for (let i = 0; i < STAR_COUNT; i++) {
+            stars.push(new Star());
+        }
+
+        for (let i = 0; i < MICRO_STAR_COUNT; i++) {
+            microStars.push(new MicroStar());
         }
     }
 
     function animate() {
         ctx.clearRect(0, 0, width, height);
 
-        // 1. Draw connections between nearby particles
-        for (let i = 0; i < particles.length; i++) {
-            for (let j = i + 1; j < particles.length; j++) {
-                const dx = particles[i].x - particles[j].x;
-                const dy = particles[i].y - particles[j].y;
+        // 1. Draw distant background twinkling stars
+        for (let i = 0; i < microStars.length; i++) {
+            microStars[i].update();
+            microStars[i].draw();
+        }
+
+        // 2. Draw constellation lines between nearby stars
+        for (let i = 0; i < stars.length; i++) {
+            for (let j = i + 1; j < stars.length; j++) {
+                const dx = stars[i].x - stars[j].x;
+                const dy = stars[i].y - stars[j].y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
 
                 if (dist < MAX_DISTANCE) {
-                    const alpha = (1 - dist / MAX_DISTANCE) * 0.16;
+                    const alpha = (1 - dist / MAX_DISTANCE) * 0.18;
                     ctx.beginPath();
-                    ctx.moveTo(particles[i].x, particles[i].y);
-                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.moveTo(stars[i].x, stars[i].y);
+                    ctx.lineTo(stars[j].x, stars[j].y);
                     ctx.strokeStyle = `rgba(167, 139, 250, ${alpha})`;
                     ctx.lineWidth = 1;
                     ctx.stroke();
@@ -1409,18 +1520,18 @@ function initCyberBackground() {
             }
         }
 
-        // 2. Interactive: Draw connection lines from mouse cursor to nearby particles
+        // 3. Interactive: Draw constellation laser lines from mouse to nearby stars
         if (mouse.x !== null && mouse.y !== null) {
-            for (let i = 0; i < particles.length; i++) {
-                const dx = mouse.x - particles[i].x;
-                const dy = mouse.y - particles[i].y;
+            for (let i = 0; i < stars.length; i++) {
+                const dx = mouse.x - stars[i].x;
+                const dy = mouse.y - stars[i].y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
 
                 if (dist < 165) {
-                    const alpha = (1 - dist / 165) * 0.32;
+                    const alpha = (1 - dist / 165) * 0.35;
                     ctx.beginPath();
                     ctx.moveTo(mouse.x, mouse.y);
-                    ctx.lineTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(stars[i].x, stars[i].y);
                     ctx.strokeStyle = `rgba(167, 139, 250, ${alpha})`;
                     ctx.lineWidth = 1.2;
                     ctx.stroke();
@@ -1428,13 +1539,13 @@ function initCyberBackground() {
             }
         }
 
-        // 3. Draw & update particles
-        for (let i = 0; i < particles.length; i++) {
-            particles[i].update();
-            particles[i].draw();
+        // 4. Draw & update drifting constellation stars
+        for (let i = 0; i < stars.length; i++) {
+            stars[i].update();
+            stars[i].draw();
         }
 
-        // 4. Draw & update click sparks
+        // 5. Draw & update click star sparks
         for (let i = sparks.length - 1; i >= 0; i--) {
             sparks[i].update();
             sparks[i].draw();
@@ -1477,7 +1588,7 @@ function initCyberBackground() {
         mouse.y = null;
     });
 
-    // Spawn sparks on click
+    // Spawn star sparks on click
     window.addEventListener("click", (e) => {
         for (let i = 0; i < 10; i++) {
             sparks.push(new Spark(e.clientX, e.clientY));
