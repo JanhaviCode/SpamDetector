@@ -62,6 +62,7 @@
             <span>✦ Generative AI</span>
             <span>✦ Email Validation</span>
             <span>✦ Phone Intelligence</span>
+            <span>✦ QR & Quishing Scanner</span>
         </div>
 
     </section>
@@ -88,7 +89,7 @@
 
             <!-- MESSAGE SCANNER -->
 
-            <div class="col-lg-4 col-md-6">
+            <div class="col-xl-3 col-md-6">
 
                 <button class="tool-card active"
                         data-tool="message"
@@ -118,7 +119,7 @@
 
             <!-- EMAIL SCANNER -->
 
-            <div class="col-lg-4 col-md-6">
+            <div class="col-xl-3 col-md-6">
 
                 <button class="tool-card"
                         data-tool="email"
@@ -148,7 +149,7 @@
 
             <!-- PHONE SCANNER -->
 
-            <div class="col-lg-4 col-md-6">
+            <div class="col-xl-3 col-md-6">
 
                 <button class="tool-card"
                         data-tool="phone"
@@ -167,7 +168,37 @@
                     </p>
 
                     <div class="tool-footer">
-                        <span>PHONE VALIDATION API</span>
+                        <span>PHONE INTELLIGENCE API</span>
+                        <span class="tool-indicator"></span>
+                    </div>
+
+                </button>
+
+            </div>
+
+
+            <!-- QR CODE SCANNER -->
+
+            <div class="col-xl-3 col-md-6">
+
+                <button class="tool-card"
+                        data-tool="qr"
+                        type="button">
+
+                    <div class="tool-top">
+                        <div class="tool-icon icon-amber">⚅</div>
+                        <span class="tool-arrow">↗</span>
+                    </div>
+
+                    <h3>QR Verifier</h3>
+
+                    <p>
+                        Scan or upload QR codes to detect Quishing (QR phishing),
+                        fraudulent payment traps, and malicious links.
+                    </p>
+
+                    <div class="tool-footer">
+                        <span>QUISHING & URL ARBITER</span>
                         <span class="tool-indicator"></span>
                     </div>
 
@@ -323,6 +354,101 @@
             </form>
 
 
+            <!-- QR CODE VERIFIER FORM -->
+
+            <form id="qrForm" class="scanner-form hidden">
+
+                <div class="qr-mode-tabs">
+                    <button type="button" class="qr-tab-btn active" data-mode="camera">
+                        <span>📷</span> Camera Scan
+                    </button>
+                    <button type="button" class="qr-tab-btn" data-mode="file">
+                        <span>📁</span> Upload Image
+                    </button>
+                    <button type="button" class="qr-tab-btn" data-mode="paste">
+                        <span>⌨️</span> Paste Link / Text
+                    </button>
+                </div>
+
+                <!-- 1. CAMERA SCAN MODE -->
+                <div id="qrCameraMode" class="qr-mode-panel">
+                    <div class="qr-camera-container">
+                        <div id="qrReader" class="qr-reader-box"></div>
+                        <div id="qrCameraPlaceholder" class="qr-placeholder">
+                            <span class="qr-big-icon">📷</span>
+                            <h4>Real-Time Camera QR Scanner</h4>
+                            <p>Point your webcam or phone camera at any QR code to scan and verify it instantly.</p>
+                            <button type="button" id="startCameraBtn" class="scan-button" style="width: auto; padding: 12px 24px;">
+                                <span>Start Camera</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="qrCameraControls" class="qr-camera-controls hidden">
+                        <button type="button" id="stopCameraBtn" class="clear-button">Stop Camera ×</button>
+                        <span class="qr-scanning-indicator"><span class="status-dot"></span> Camera Active: Scanning...</span>
+                    </div>
+                </div>
+
+                <!-- 2. FILE UPLOAD MODE -->
+                <div id="qrFileMode" class="qr-mode-panel hidden">
+                    <div id="qrDropzone" class="qr-dropzone">
+                        <input type="file" id="qrFileInput" accept="image/*" class="qr-file-input">
+                        <div id="qrDropContent" class="qr-dropzone-content">
+                            <span class="qr-big-icon">🖼️</span>
+                            <h4>Drop your QR code image here</h4>
+                            <p>or click to select a screenshot / photo (PNG, JPG, WebP)</p>
+                            <span class="qr-browse-badge">Browse File</span>
+                        </div>
+                        <div id="qrFilePreview" class="qr-preview-box hidden">
+                            <img id="qrPreviewImg" src="" alt="QR Preview">
+                            <span id="qrFileName" class="qr-file-name"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. PASTE / MANUAL INPUT MODE -->
+                <div id="qrPasteMode" class="qr-mode-panel hidden">
+                    <label for="qrTextInput" class="form-label">
+                        QR CODE CONTENT / DECODED LINK
+                    </label>
+
+                    <textarea id="qrTextInput"
+                              class="form-control custom-input"
+                              rows="4"
+                              placeholder="Paste a decoded QR link (e.g. https://... or upi://pay?pa=...)..."></textarea>
+                </div>
+
+                <!-- EXAMPLES -->
+                <div class="example-section mt-4">
+                    <span class="example-label">TRY AN EXAMPLE</span>
+
+                    <button type="button"
+                            class="example-chip qr-example-chip"
+                            data-example="upi://pay?pa=cashbackreward@ybl&pn=GooglePayReward&am=2999&cu=INR&tn=Pay%20to%20claim%20scratch%20card">
+                        Fake UPI Cashback Trap
+                    </button>
+
+                    <button type="button"
+                            class="example-chip qr-example-chip"
+                            data-example="https://login.microsoftonline.com-auth-alert.xyz/verify">
+                        Quishing Phishing Link
+                    </button>
+
+                    <button type="button"
+                            class="example-chip qr-example-chip"
+                            data-example="https://github.com/JanhaviCode/SpamDetector">
+                        Safe GitHub Link
+                    </button>
+                </div>
+
+                <button type="submit" class="scan-button mt-4" id="qrSubmit">
+                    <span>Verify QR Code</span>
+                    <span class="button-arrow">→</span>
+                </button>
+
+            </form>
+
+
             <!-- LOADING -->
 
             <div id="loadingState" class="loading-state hidden">
@@ -441,6 +567,7 @@
 </main>
 
 
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 
 </body>
