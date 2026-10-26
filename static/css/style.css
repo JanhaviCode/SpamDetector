@@ -2376,6 +2376,8 @@ body.threat-legitimate .glow-two {
         margin 0.15s ease-out,
         border-color 0.15s ease,
         background-color 0.15s ease,
+        border-radius 0.15s ease-out,
+        box-shadow 0.15s ease,
         opacity 0.15s ease;
     opacity: 0;
 }
@@ -2417,16 +2419,36 @@ body.threat-legitimate .glow-two {
     background: #34d399;
 }
 
-/* Instant hardware cursor enabled: native 0ms latency */
+/* Precision text mode for inputs/textareas */
+.custom-cursor-ring.cursor-text {
+    width: 2px;
+    height: 22px;
+    margin-left: -1px;
+    margin-top: -11px;
+    border-radius: 1px;
+    background: #a78bfa;
+    border: none;
+    box-shadow: 0 0 10px rgba(167, 139, 250, 0.85);
+}
+
+.custom-cursor-ring.cursor-text.cursor-active {
+    width: 2px;
+    height: 22px;
+    margin-left: -1px;
+    margin-top: -11px;
+    background: #34d399;
+    box-shadow: 0 0 12px #34d399;
+}
+
+.custom-cursor-dot.cursor-text {
+    opacity: 0 !important;
+}
+
+/* Hide Windows OS cursor completely across all elements */
 @media (hover: hover) and (pointer: fine) {
-    body, html {
-        cursor: default;
-    }
-    button, a, .tool-card, .example-chip, .workspace-tab-btn, .clear-button, .qr-tab-btn, .report-action-btn {
-        cursor: pointer;
-    }
-    input, textarea {
-        cursor: text;
+    *, *::before, *::after,
+    html, body, button, a, input, textarea, select, label {
+        cursor: none !important;
     }
 }
 

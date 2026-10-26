@@ -1645,10 +1645,13 @@ function initCustomCursor() {
     document.addEventListener("mouseover", (e) => {
         if (!e.target || !e.target.closest) return;
         if (e.target.closest(textInputSelector)) {
-            // Keep text inputs clean with native I-beam cursor
-            cursorDot.style.opacity = "0";
-            cursorRing.style.opacity = "0";
+            cursorDot.classList.remove("cursor-hover");
+            cursorRing.classList.remove("cursor-hover");
+            cursorRing.classList.add("cursor-text");
+            cursorDot.classList.add("cursor-text");
         } else if (e.target.closest(interactiveSelector)) {
+            cursorRing.classList.remove("cursor-text");
+            cursorDot.classList.remove("cursor-text");
             cursorDot.classList.add("cursor-hover");
             cursorRing.classList.add("cursor-hover");
         }
@@ -1657,10 +1660,8 @@ function initCustomCursor() {
     document.addEventListener("mouseout", (e) => {
         if (!e.target || !e.target.closest) return;
         if (e.target.closest(textInputSelector)) {
-            if (isVisible) {
-                cursorDot.style.opacity = "1";
-                cursorRing.style.opacity = "1";
-            }
+            cursorRing.classList.remove("cursor-text");
+            cursorDot.classList.remove("cursor-text");
         } else if (e.target.closest(interactiveSelector)) {
             cursorDot.classList.remove("cursor-hover");
             cursorRing.classList.remove("cursor-hover");
