@@ -36,18 +36,12 @@ let currentTool = "message";
 let currentHistoryFilter = "all";
 let history = [];
 
-// Per-tab cached analysis results
 const tabResults = {
     message: null,
     email: null,
     phone: null,
     qr: null
 };
-
-
-/* --------------------------------
-   SAFE HTML & TOAST HELPERS
-   -------------------------------- */
 
 function escapeHTML(value) {
     return String(value ?? "").replace(/[&<>"']/g, character => ({
@@ -84,18 +78,12 @@ function showToast(message, icon = "✦") {
     }, 3100);
 }
 
-
-/* --------------------------------
-   UNIFIED TAB SWITCHING SYSTEM
-   -------------------------------- */
-
 function switchTab(toolId, shouldScroll = false) {
     const validTools = ["message", "email", "phone", "qr"];
     if (!validTools.includes(toolId)) toolId = "message";
 
     currentTool = toolId;
 
-    // 1. Update Workspace Tab Buttons & Pop Active Tab Icon
     workspaceTabButtons.forEach(btn => {
         const isSelected = btn.dataset.tab === toolId;
         btn.classList.toggle("active", isSelected);
@@ -105,26 +93,24 @@ function switchTab(toolId, shouldScroll = false) {
             const icon = btn.querySelector(".tab-btn-icon");
             if (icon) {
                 icon.style.animation = "none";
-                void icon.offsetWidth; // Reflow to restart icon pop animation
+                void icon.offsetWidth;
                 icon.style.animation = "";
             }
         }
     });
 
-    // 2. Update Tool Cards (Overview row)
     toolCards.forEach(card => {
         card.classList.toggle("active", card.dataset.tool === toolId);
     });
 
-    // 3. Update Tab Panes with Lively Spring Zoom-In
     scannerTabPanes.forEach(pane => {
         const paneId = `pane-${toolId}`;
         const isActive = pane.id === paneId;
         if (isActive) {
             pane.classList.remove("hidden");
-            // Force animation restart so zoom-in fires smoothly
+
             pane.classList.remove("active");
-            void pane.offsetWidth; // Trigger reflow
+            void pane.offsetWidth;
             pane.classList.add("active");
         } else {
             pane.classList.remove("active");
@@ -132,11 +118,9 @@ function switchTab(toolId, shouldScroll = false) {
         }
     });
 
-    // 4. Hide loading & error states
     hideElement(loadingState);
     hideElement(errorBox);
 
-    // 5. Restore or hide result for this specific tab
     if (tabResults[toolId]) {
         resultContent.innerHTML = tabResults[toolId];
         showElement(resultSection);
@@ -154,19 +138,16 @@ function switchTab(toolId, shouldScroll = false) {
         document.body.classList.remove("threat-spam", "threat-suspicious", "threat-legitimate");
     }
 
-    // 6. Stop camera if moving away from QR tab
     if (toolId !== "qr" && typeof stopCameraScanner === "function") {
         stopCameraScanner();
     }
 
-    // 7. Update URL hash without causing page jump
     try {
         history.replaceState(null, null, `#${toolId}`);
     } catch (e) {
-        // Fallback or restricted environment
+
     }
 
-    // 8. Smooth scroll if initiated from overview cards
     if (shouldScroll) {
         const workspaceElem = document.getElementById("scannerWorkspace");
         if (workspaceElem) {
@@ -178,32 +159,24 @@ function switchTab(toolId, shouldScroll = false) {
     }
 }
 
-// Workspace tab bar click listeners
 workspaceTabButtons.forEach(btn => {
     btn.addEventListener("click", () => {
         switchTab(btn.dataset.tab, false);
     });
 });
 
-// Tool card click listeners
 toolCards.forEach(card => {
     card.addEventListener("click", () => {
         switchTab(card.dataset.tool, true);
     });
 });
 
-// Load tab from URL hash if present
 window.addEventListener("DOMContentLoaded", () => {
     const hash = window.location.hash.replace("#", "").toLowerCase();
     if (["message", "email", "phone", "qr"].includes(hash)) {
         switchTab(hash, false);
     }
 });
-
-
-/* --------------------------------
-   INPUT CLEARING & EXAMPLES
-   -------------------------------- */
 
 if (clearMessageInput && messageInput) {
     clearMessageInput.addEventListener("click", () => {
@@ -228,14 +201,12 @@ if (dismissErrorBtn && errorBox) {
     });
 }
 
-// Character counter for message input
 if (messageInput && characterCount) {
     messageInput.addEventListener("input", () => {
         characterCount.textContent = `${messageInput.value.length} / 10000`;
     });
 }
 
-// Message example chips
 document.querySelectorAll(".example-chip:not(.email-example-chip):not(.phone-example-chip):not(.qr-example-chip)").forEach(button => {
     button.addEventListener("click", () => {
         if (messageInput) {
@@ -247,7 +218,6 @@ document.querySelectorAll(".example-chip:not(.email-example-chip):not(.phone-exa
     });
 });
 
-// Email example chips
 document.querySelectorAll(".email-example-chip").forEach(button => {
     button.addEventListener("click", () => {
         if (emailInput) {
@@ -258,7 +228,6 @@ document.querySelectorAll(".email-example-chip").forEach(button => {
     });
 });
 
-// Phone example chips
 document.querySelectorAll(".phone-example-chip").forEach(button => {
     button.addEventListener("click", () => {
         if (phoneInput) {
@@ -271,11 +240,6 @@ document.querySelectorAll(".phone-example-chip").forEach(button => {
         }
     });
 });
-
-
-/* --------------------------------
-   API REQUEST HELPER
-   -------------------------------- */
 
 async function postJSON(endpoint, payload) {
     const response = await fetch(endpoint, {
@@ -296,11 +260,6 @@ async function postJSON(endpoint, payload) {
 
     return data;
 }
-
-
-/* --------------------------------
-   LOADING AND ERROR STATES
-   -------------------------------- */
 
 function startLoading(title, description, form) {
     hideElement(errorBox);
@@ -332,11 +291,6 @@ function showError(message) {
     showElement(errorBox);
     errorBox.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
-
-
-/* --------------------------------
-   RESULT HELPERS & CACHING
-   -------------------------------- */
 
 function formatBoolean(value) {
     if (value === true) return "Yes";
@@ -378,7 +332,6 @@ function showResults(html) {
     resultContent.innerHTML = html;
     showElement(resultSection);
 
-    // Update dynamic background threat atmosphere
     document.body.classList.remove("threat-spam", "threat-suspicious", "threat-legitimate");
     if (html.includes("status-high") || html.includes("SPAM")) {
         document.body.classList.add("threat-spam");
@@ -394,7 +347,6 @@ function showResults(html) {
     });
 }
 
-// Copy Report Action
 if (copyReportBtn) {
     copyReportBtn.addEventListener("click", () => {
         if (!resultContent || !resultContent.innerText.trim()) {
@@ -413,7 +365,6 @@ if (copyReportBtn) {
     });
 }
 
-// Clear Result Action
 if (clearResultBtn) {
     clearResultBtn.addEventListener("click", () => {
         tabResults[currentTool] = null;
@@ -421,11 +372,6 @@ if (clearResultBtn) {
         showToast("Analysis result cleared", "✓");
     });
 }
-
-
-/* --------------------------------
-   HISTORY & FILTERING SYSTEM
-   -------------------------------- */
 
 function addHistory(tool, summary, status) {
     history.unshift({
@@ -443,7 +389,7 @@ function addHistory(tool, summary, status) {
 }
 
 function renderHistory() {
-    // Update filter buttons count
+
     const allBtn = document.querySelector('.history-filter-btn[data-filter="all"]');
     if (allBtn) allBtn.textContent = `All (${history.length})`;
 
@@ -510,11 +456,6 @@ if (clearHistoryBtn) {
         showToast("Session history cleared", "✓");
     });
 }
-
-
-/* --------------------------------
-   MESSAGE SCANNER SUBMISSION
-   -------------------------------- */
 
 if (messageForm) {
     messageForm.addEventListener("submit", async event => {
@@ -615,11 +556,6 @@ function renderMessageResult(data) {
         </div>
     `);
 }
-
-
-/* --------------------------------
-   EMAIL CHECKER SUBMISSION
-   -------------------------------- */
 
 if (emailForm) {
     emailForm.addEventListener("submit", async event => {
@@ -742,11 +678,6 @@ function renderEmailResult(data) {
         </div>
     `);
 }
-
-
-/* --------------------------------
-   PHONE CHECKER SUBMISSION
-   -------------------------------- */
 
 if (phoneForm) {
     phoneForm.addEventListener("submit", async event => {
@@ -892,11 +823,6 @@ function renderPhoneResult(data) {
     `);
 }
 
-
-/* ------------------------------------------
-   QR CODE & QUISHING VERIFIER
-   ------------------------------------------ */
-
 let currentQrMode = "camera";
 let html5QrCodeScanner = null;
 let isCameraActive = false;
@@ -937,7 +863,6 @@ qrTabButtons.forEach(btn => {
     });
 });
 
-// QR Example chips
 document.querySelectorAll(".qr-example-chip").forEach(chip => {
     chip.addEventListener("click", () => {
         const example = chip.dataset.example;
@@ -952,7 +877,6 @@ document.querySelectorAll(".qr-example-chip").forEach(chip => {
     });
 });
 
-// Camera Scanner Controls
 function initQrScanner() {
     if (!html5QrCodeScanner && typeof Html5Qrcode !== "undefined") {
         try {
@@ -983,7 +907,7 @@ async function startCameraScanner() {
                 submitQrPayload(decodedText, "camera");
             },
             (errorMessage) => {
-                // scanning frame error (ignore)
+
             }
         );
         isCameraActive = true;
@@ -1014,7 +938,6 @@ if (stopCameraBtn) {
     stopCameraBtn.addEventListener("click", stopCameraScanner);
 }
 
-// File Upload Scanner
 if (qrDropzone && qrFileInput) {
     qrDropzone.addEventListener("dragover", e => {
         e.preventDefault();
@@ -1090,7 +1013,6 @@ async function handleQrImageFile(file) {
     }
 }
 
-// Submit QR verification
 async function submitQrPayload(payload, sourceMethod = "manual") {
     payload = (payload || "").trim();
     if (!payload) {
@@ -1155,14 +1077,13 @@ function renderQrResult(data) {
     const isUpi = Boolean(data.is_upi);
     const isRedirected = Boolean(data.is_redirected);
 
-    // UPI Payment Scam Alert Banner
     const upiAlertHTML = isUpi ? `
         <div class="upi-alert-banner">
             <div class="upi-alert-title">
                 <span>⚠️</span> <strong>CRITICAL PAYMENT FRAUD ALERT (UPI DEBIT TRAP)</strong>
             </div>
             <p>
-                This QR code contains a <strong>Payment Request</strong> to debit your bank account! 
+                This QR code contains a <strong>Payment Request</strong> to debit your bank account!
                 Scammers frequently trick victims with "Scan to receive cashback/lottery prize" claims.
             </p>
             <div class="spoofing-rules">
@@ -1173,7 +1094,6 @@ function renderQrResult(data) {
         </div>
     ` : "";
 
-    // Quishing Redirect Unmasking Box
     const redirectHTML = isRedirected ? `
         <div class="quishing-redirect-box">
             <div class="quishing-redirect-title">
@@ -1266,11 +1186,6 @@ function renderQrResult(data) {
     `);
 }
 
-
-/* ========================================================
-   CYBER CONSTELLATION STARRY BACKGROUND SYSTEM
-   ======================================================== */
-
 function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius, rotation, fillStyle, glowColor, glowBlur) {
     let rot = (Math.PI / 2) * 3 + (rotation || 0);
     const step = Math.PI / spikes;
@@ -1300,7 +1215,6 @@ function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius, rotation, fillS
     }
     ctx.fill();
 
-    // Central radiant starlight core gleam
     ctx.beginPath();
     ctx.arc(cx, cy, Math.max(1.2, outerRadius * 0.25), 0, Math.PI * 2);
     ctx.fillStyle = "#ffffff";
@@ -1339,7 +1253,6 @@ function initCyberBackground() {
         height = canvas.height = window.innerHeight;
     }
 
-    // Drifting constellation stars (4-pointed cross sparkle stars and 5-pointed celestial stars)
     class Star {
         constructor() {
             this.x = Math.random() * width;
@@ -1347,7 +1260,7 @@ function initCyberBackground() {
             this.vx = (Math.random() - 0.5) * 0.35;
             this.vy = (Math.random() - 0.5) * 0.35;
             this.spikes = Math.random() > 0.2 ? 4 : 5;
-            // Noticeably larger star size (5.5px to 12.5px radius)
+
             this.outerRadius = Math.random() * 7 + 5.5;
             this.innerRadius = this.outerRadius * (this.spikes === 4 ? 0.26 : 0.4);
             this.rotation = Math.random() * Math.PI * 2;
@@ -1368,7 +1281,6 @@ function initCyberBackground() {
             this.rotation += this.rotationSpeed;
             this.twinklePhase += this.twinkleSpeed;
 
-            // Interactive mouse gentle gravity / repulsion
             if (mouse.x !== null && mouse.y !== null) {
                 const dx = mouse.x - this.x;
                 const dy = mouse.y - this.y;
@@ -1401,7 +1313,6 @@ function initCyberBackground() {
         }
     }
 
-    // Distant background twinkling micro-stars (now clearly visible, 3px to 6px)
     class MicroStar {
         constructor() {
             this.x = Math.random() * width;
@@ -1433,7 +1344,6 @@ function initCyberBackground() {
         }
     }
 
-    // Interactive star sparkle burst on click
     class Spark {
         constructor(x, y) {
             this.x = x;
@@ -1495,13 +1405,11 @@ function initCyberBackground() {
     function animate() {
         ctx.clearRect(0, 0, width, height);
 
-        // 1. Draw distant background twinkling stars
         for (let i = 0; i < microStars.length; i++) {
             microStars[i].update();
             microStars[i].draw();
         }
 
-        // 2. Draw constellation lines between nearby stars
         for (let i = 0; i < stars.length; i++) {
             for (let j = i + 1; j < stars.length; j++) {
                 const dx = stars[i].x - stars[j].x;
@@ -1520,7 +1428,6 @@ function initCyberBackground() {
             }
         }
 
-        // 3. Interactive: Draw constellation laser lines from mouse to nearby stars
         if (mouse.x !== null && mouse.y !== null) {
             for (let i = 0; i < stars.length; i++) {
                 const dx = mouse.x - stars[i].x;
@@ -1539,13 +1446,11 @@ function initCyberBackground() {
             }
         }
 
-        // 4. Draw & update drifting constellation stars
         for (let i = 0; i < stars.length; i++) {
             stars[i].update();
             stars[i].draw();
         }
 
-        // 5. Draw & update click star sparks
         for (let i = sparks.length - 1; i >= 0; i--) {
             sparks[i].update();
             sparks[i].draw();
@@ -1569,13 +1474,11 @@ function initCyberBackground() {
         mouse.x = e.clientX;
         mouse.y = e.clientY;
 
-        // Move background spotlight with mouse
         if (spotlight) {
             spotlight.style.setProperty("--mouse-screen-x", `${e.clientX}px`);
             spotlight.style.setProperty("--mouse-screen-y", `${e.clientY}px`);
         }
 
-        // Subtle interactive cyber grid parallax
         if (gridOverlay) {
             const ox = ((e.clientX - window.innerWidth / 2) * 0.02).toFixed(1);
             const oy = ((e.clientY - window.innerHeight / 2) * 0.02).toFixed(1);
@@ -1588,7 +1491,6 @@ function initCyberBackground() {
         mouse.y = null;
     });
 
-    // Spawn star sparks on click
     window.addEventListener("click", (e) => {
         for (let i = 0; i < 10; i++) {
             sparks.push(new Spark(e.clientX, e.clientY));
@@ -1606,10 +1508,6 @@ function initCyberBackground() {
     init();
     animate();
 }
-
-/* ========================================================
-   SCROLL-DRIVEN REVEAL & INTERSECTION OBSERVER SYSTEM
-   ======================================================== */
 
 function initScrollReveal() {
     const revealElements = document.querySelectorAll("[data-scroll-reveal]");
@@ -1644,11 +1542,6 @@ function initScrollReveal() {
     }
 }
 
-
-/* ========================================================
-   SMOOTH PARALLAX MOVEMENT ON SCROLL
-   ======================================================== */
-
 function initScrollParallax() {
     const cyberBg = document.querySelector(".cyber-moving-bg");
     if (!cyberBg) return;
@@ -1666,11 +1559,6 @@ function initScrollParallax() {
         }
     }, { passive: true });
 }
-
-
-/* ========================================================
-   INTERACTIVE 3D CARD TILT & SPECULAR LIGHT PHYSICS
-   ======================================================== */
 
 function initCardTiltPhysics() {
     const tiltCards = document.querySelectorAll('[data-tilt="true"]');
@@ -1707,38 +1595,27 @@ function initCardTiltPhysics() {
     });
 }
 
-
-/* ========================================================
-   CUSTOM INTERACTIVE CYBER CURSOR SYSTEM
-   ======================================================== */
-
 function initCustomCursor() {
     const cursorDot = document.getElementById("cursorDot");
     const cursorRing = document.getElementById("cursorRing");
     if (!cursorDot || !cursorRing) return;
 
-    let mouseX = -100;
-    let mouseY = -100;
-    let ringX = -100;
-    let ringY = -100;
     let isVisible = false;
-    let ringAnimationId = null;
 
+    // Instant zero-lag tracking: update dot and ring directly on mousemove
     window.addEventListener("mousemove", (e) => {
-        mouseX = e.clientX;
-        mouseY = e.clientY;
+        const x = e.clientX;
+        const y = e.clientY;
+
+        cursorDot.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+        cursorRing.style.transform = `translate3d(${x}px, ${y}px, 0)`;
 
         if (!isVisible) {
             cursorDot.style.opacity = "1";
             cursorRing.style.opacity = "1";
-            ringX = mouseX;
-            ringY = mouseY;
             isVisible = true;
         }
-
-        // Instant precision dot placement
-        cursorDot.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0)`;
-    });
+    }, { passive: true });
 
     window.addEventListener("mouseleave", () => {
         cursorDot.style.opacity = "0";
@@ -1762,46 +1639,34 @@ function initCustomCursor() {
         cursorRing.classList.remove("cursor-active");
     });
 
-    // Dynamic hover expansion on interactive UI elements
-    const interactiveSelector = "button, a, input, textarea, select, .tool-card, .example-chip, .workspace-tab-btn, .history-filter-btn, .qr-dropzone, .form-action-link, .clear-button, .report-action-btn";
+    const interactiveSelector = "button, a, .tool-card, .example-chip, .workspace-tab-btn, .history-filter-btn, .qr-dropzone, .form-action-link, .clear-button, .report-action-btn";
+    const textInputSelector = "input, textarea, select";
 
     document.addEventListener("mouseover", (e) => {
-        if (e.target && e.target.closest && e.target.closest(interactiveSelector)) {
+        if (!e.target || !e.target.closest) return;
+        if (e.target.closest(textInputSelector)) {
+            // Keep text inputs clean with native I-beam cursor
+            cursorDot.style.opacity = "0";
+            cursorRing.style.opacity = "0";
+        } else if (e.target.closest(interactiveSelector)) {
             cursorDot.classList.add("cursor-hover");
             cursorRing.classList.add("cursor-hover");
         }
     });
 
     document.addEventListener("mouseout", (e) => {
-        if (e.target && e.target.closest && e.target.closest(interactiveSelector)) {
+        if (!e.target || !e.target.closest) return;
+        if (e.target.closest(textInputSelector)) {
+            if (isVisible) {
+                cursorDot.style.opacity = "1";
+                cursorRing.style.opacity = "1";
+            }
+        } else if (e.target.closest(interactiveSelector)) {
             cursorDot.classList.remove("cursor-hover");
             cursorRing.classList.remove("cursor-hover");
         }
     });
-
-    // Inertial lerp ring animation loop (spring trailing physics)
-    function renderRing() {
-        if (isVisible) {
-            const dx = mouseX - ringX;
-            const dy = mouseY - ringY;
-            if (Math.abs(dx) < 0.05 && Math.abs(dy) < 0.05) {
-                ringX = mouseX;
-                ringY = mouseY;
-            } else {
-                ringX += dx * 0.22;
-                ringY += dy * 0.22;
-            }
-            cursorRing.style.transform = `translate3d(${ringX.toFixed(2)}px, ${ringY.toFixed(2)}px, 0)`;
-        }
-        ringAnimationId = requestAnimationFrame(renderRing);
-    }
-    renderRing();
 }
-
-
-/* ========================================================
-   MAIN INITIALIZATION RUNNER
-   ======================================================== */
 
 function initLiveInteractions() {
     initCyberBackground();
